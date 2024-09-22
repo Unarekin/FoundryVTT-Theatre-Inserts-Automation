@@ -1,5 +1,5 @@
 {
-  "THEATREINSERTSMACROS": {
+  "THEATREAUTOMATION": {
     "ERRORS": {
       "THEATREINSERTSNOTFOUND": "{MODULENAME} requires that Theatre Inserts be installed and active.",
       "INVALIDACTOR": "Invalid actor provided.",

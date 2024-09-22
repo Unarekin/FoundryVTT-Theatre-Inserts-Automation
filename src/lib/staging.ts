@@ -1,10 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { coerceActor } from "./coercion";
-import { log } from "./log";
-
 
 /**
  * Checks whether or not an {@link Actor} is added to the Theatre Inserts stage.

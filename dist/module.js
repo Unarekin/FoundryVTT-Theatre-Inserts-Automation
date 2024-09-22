@@ -53,7 +53,7 @@
 
   // src/lib/log.ts
   var LOG_ICON = "\u{1F3AD}";
-  var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Macros"}`;
+  var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
   var log = wrappedConsoleFunc(console.log);
   var warn = wrappedConsoleFunc(console.warn);
   var error = wrappedConsoleFunc(console.error);
@@ -67,90 +67,6 @@
     };
   }
 
-  // src/lib/sendTheatreMessage.ts
-  function sendTheatreMessage(arg, message, emote, ttl, deactivate, unstage) {
-    return doSendTheatreMessage(arg, message, emote, ttl, deactivate, unstage);
-  }
-  async function doSendTheatreMessage(arg, message, emote, ttl, deactivate, unstage) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTMACROS.ERRORS.INVALIDACTOR"));
-    await activateActor(actor);
-    const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
-    if (!navItem.classList.contains("theatre-control-nav-bar-item-speakingas")) {
-      theatre.handleNavItemMouseUp({
-        currentTarget: navItem,
-        button: 0
-      });
-    }
-    const chatBox = $("#chat-message");
-    const previousValue = chatBox.val() ?? "";
-    const prevFocus = chatBox.is(":selected");
-    theatre.setUserTyping(game.user?.id, theatre.speakingAs);
-    if (emote) {
-      theatre.isDelayEmote = true;
-      theatre.setUserEmote(
-        game.user?.id,
-        `theatre-${actor.id}`,
-        "emote",
-        emote,
-        false
-      );
-      if (ttl) {
-        setTimeout(() => {
-          theatre.isDelayEmote = false;
-          theatre.setUserEmote(
-            game.user?.id,
-            `theatre-${actor.id}`,
-            "emote",
-            "",
-            false
-          );
-        }, ttl);
-      }
-    }
-    chatBox.trigger("focus");
-    chatBox.val(message);
-    chatBox.trigger(
-      jQuery.Event("keydown", {
-        which: 13,
-        keyCode: 13,
-        originalEvent: new KeyboardEvent("keydown", {
-          code: "Enter",
-          key: "Enter",
-          charCode: 13,
-          keyCode: 13,
-          view: window,
-          bubbles: true
-        })
-      })
-    );
-    chatBox.trigger(
-      jQuery.Event("keyup", {
-        which: 13,
-        keyCode: 13,
-        originalEvent: new KeyboardEvent("keyup", {
-          code: "Enter",
-          key: "Enter",
-          charCode: 13,
-          keyCode: 13,
-          view: window,
-          bubbles: true
-        })
-      })
-    );
-    if (!prevFocus) chatBox.trigger("blur");
-    chatBox.val(previousValue);
-    await wait(ttl ?? 0);
-    if (deactivate) theatre.removeInsertById(`theatre-${actor.id}`, false);
-    if (unstage) {
-      theatre.handleNavItemMouseUp({
-        currentTarget: navItem,
-        button: 2,
-        ctrlKey: true
-      });
-    }
-  }
-
   // src/lib/staging.ts
   function isActorStaged(arg) {
     const actor = coerceActor(arg);
@@ -160,7 +76,6 @@
   function stageActor(arg) {
     const actor = coerceActor(arg);
     if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
-    log("Staging:", actor, isActorStaged(actor));
     if (!isActorStaged(actor))
       Theatre.addToNavBar(actor);
   }
@@ -176,10 +91,52 @@
     }
   }
 
+  // src/lib/messaging.ts
+  function sendMessage(arg, message) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+    return doSendMessage(actor, message);
+  }
+  async function doSendMessage(actor, message) {
+    if (!isActorStaged(actor)) stageActor(actor);
+    if (!isActorActive(actor)) await activateActor(actor);
+    const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
+    if (!navItem.classList.contains("theatre-control-nav-bar-item-speakingas")) {
+      theatre.handleNavItemMouseUp({
+        currentTarget: navItem,
+        button: 0
+      });
+    }
+    const chatBox = $("#chat-message");
+    const previousChatValue = chatBox.val() ?? "";
+    const previousChatFocus = chatBox.is(":selected");
+    theatre.setUserTyping(game.user?.id, theatre.speakingAs);
+    chatBox.val(message);
+    chatBox.trigger("focus");
+    chatBox.trigger(createEnterEvent("keydown"));
+    chatBox.trigger(createEnterEvent("keyup"));
+    chatBox.val(previousChatValue);
+    if (!previousChatFocus) chatBox.trigger("blur");
+  }
+  function createEnterEvent(name) {
+    return jQuery.Event(name, {
+      which: 13,
+      keyCode: 13,
+      originalEvent: new KeyboardEvent(name, {
+        code: "Enter",
+        key: "Enter",
+        charCode: 13,
+        keyCode: 13,
+        view: window,
+        bubbles: true
+      })
+    });
+  }
+
   // src/module.ts
   Hooks.on("ready", () => {
     if (game instanceof Game && !game.modules.get("theatre")?.active) {
-      ui.notifications?.error(game.i18n?.format("THEATREINSERTSMACROS.ERRORS.THEATREINSERTSNOTFOUND", { MODULENAME: "Theatre Inserts Macros" }));
+      ui.notifications?.error(game.i18n?.format("THEATREAUTOMATION.ERRORS.THEATREINSERTSNOTFOUND", { MODULENAME: "Theatre Inserts Automation" }));
     } else {
       const api = {
         wait,
@@ -189,9 +146,9 @@
         isActorStaged,
         stageActor,
         unstageActor,
-        sendTheatreMessage
+        sendMessage
       };
-      window.TheatreMacros = api;
+      window.TheatreAutomation = api;
       log(`Ready!`);
     }
   });

@@ -1,6 +1,6 @@
 {
-  "id": "theatre-inserts-macros",
-  "title": "Theatre Inserts Macros",
+  "id": "theatre-inserts-automation",
+  "title": "Theatre Inserts Automation",
   "description": "",
   "version": "#{VERSION}#",
   "library": "false",
