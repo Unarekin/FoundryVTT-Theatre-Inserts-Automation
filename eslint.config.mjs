@@ -16,5 +16,8 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "off",
+    },
   }
 );
