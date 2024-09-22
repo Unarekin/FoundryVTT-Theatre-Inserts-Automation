@@ -117,6 +117,7 @@ const buildResults = await build({
   outdir: OUT_PATH,
   sourcemap: __DEV__,
   bundle: true,
+  format: "esm",
   platform: "browser",
   minify: !__DEV__,
   define: {
@@ -127,7 +128,7 @@ const buildResults = await build({
   },
   external: ["*.woff", "*.woff2", "*.otf", "*.ttf", "*.webp"],
   plugins: [
-    nodeExternalsPlugin(),
+    // nodeExternalsPlugin(),
     cleanPlugin({ patterns: "./dist/**" }),
     sassPlugin(),
     ...copyPlugins,

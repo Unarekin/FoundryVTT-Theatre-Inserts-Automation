@@ -1,5 +1,6 @@
 import { activateActor, deactivateActor, isActorActive } from "./activation";
 import { clearEmote, setEmote } from "./emotes";
+import { introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { wait } from "./misc";
 import { isActorStaged, stageActor, unstageActor } from "./staging";
@@ -14,5 +15,6 @@ export default {
   unstageActor,
   sendMessage,
   setEmote,
-  clearEmote
+  clearEmote,
+  introduceActor
 };
