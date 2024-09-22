@@ -1,7 +1,11 @@
 {
-  "THEATREINSERTSMACROS": {
+  "THEATREAUTOMATION": {
     "ERRORS": {
-      "THEATREINSERTSNOTFOUND": "{MODULENAME} requires that Theatre Inserts be installed and active."
+      "THEATREINSERTSNOTFOUND": "{MODULENAME} requires that Theatre Inserts be installed and active.",
+      "INVALIDACTOR": "Invalid actor provided.",
+      "INVALIDPLAYLIST": "Invalid Playlist specified.",
+      "INVALIDSOUND": "Invalid Sound specified.",
+      "INVALIDPARAMETERS": "Invalid parameters provided."
     }
   }
 }

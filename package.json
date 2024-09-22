@@ -1,5 +1,5 @@
 {
-  "name": "foundryvtt-module-template",
+  "name": "theatre-inserts-automation",
   "version": "0.0.3",
   "description": "![](https://img.shields.io/badge/Foundry-v10-informational) <!--- Downloads @ Latest Badge --> <!--- replace <user>/<repo> with your username/repository --> <!--- ![Latest Release Download Count](https://img.shields.io/github/downloads/<user>/<repo>/latest/module.zip) -->",
   "main": "dist/module.js",
@@ -7,13 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "./build.mjs",
     "build:prod": "NODE_ENV=production ./build.mjs",
-    "watch": "npx onchange 'src/**/*' -- yarn build"
+    "watch": "npx onchange -i 'src/**/*' -- yarn build"
   },
   "author": "Unarekin",
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.11.0",
-    "@types/Foundry-VTT": "https://github.com/League-of-Foundry-Developers/foundry-vtt-types.git",
+    "@league-of-foundry-developers/foundry-vtt-types": "http://github.com/League-of-Foundry-Developers/foundry-vtt-types.git#v12/main",
     "@types/eslint__js": "^8.42.3",
     "deepmerge-ts": "^7.1.0",
     "esbuild": "^0.23.1",
@@ -24,6 +24,7 @@
     "esbuild-sass-plugin": "^3.3.1",
     "eslint": "^9.11.0",
     "glob": "^11.0.0",
+    "onchange": "^7.1.0",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.6.0",
     "yocto-spinner": "^0.1.0"
