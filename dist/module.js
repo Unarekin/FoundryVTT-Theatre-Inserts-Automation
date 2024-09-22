@@ -1,5 +1,56 @@
 "use strict";
 (() => {
+  // src/lib/coercion.ts
+  function coerceActor(arg) {
+    if (arg instanceof Actor) return arg;
+    if (typeof arg === "string") {
+      let actor = game.actors?.get(arg);
+      if (actor) return actor;
+      actor = game.actors?.getName(arg);
+      if (actor) return actor;
+    }
+  }
+
+  // src/lib/misc.ts
+  async function wait(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  // src/lib/activation.ts
+  function activateActor(arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+    if (!theatre.getNavItemById(`theatre-${actor.id}`))
+      Theatre.addToNavBar(actor);
+    theatre.handleNavItemMouseUp({
+      currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
+      button: 2
+    });
+    return wait(1e3);
+  }
+  function deactivateActor(arg, unstage) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+    theatre.removeInsertById(`theatre-${actor.id}`, false);
+    if (unstage) {
+      theatre.handleNavItemMouseUp({
+        currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
+        button: 2,
+        ctrlKey: true
+      });
+    }
+    return wait(1e3);
+  }
+  function isActorActive(arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+    const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
+    if (!navItem) return false;
+    return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
+  }
+
   // src/lib/log.ts
   var LOG_ICON = "\u{1F3AD}";
   var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Macros"}`;
@@ -16,87 +67,113 @@
     };
   }
 
-  // src/lib/coerceTypeOrId.ts
-  function coerceActor(arg) {
-    log("Coercing:", arg);
-    if (arg instanceof Actor) return arg;
-    if (typeof arg === "string") {
-      let actor = game.actors?.get(arg);
-      if (actor) return actor;
-      actor = game.actors?.getName(arg);
-      if (actor) return actor;
-    }
+  // src/lib/sendTheatreMessage.ts
+  function sendTheatreMessage(arg, message, emote, ttl, deactivate, unstage) {
+    return doSendTheatreMessage(arg, message, emote, ttl, deactivate, unstage);
   }
-  function coercePlaylist(arg) {
-    if (arg instanceof Playlist) return arg;
-    if (typeof arg === "string") {
-      let playlist = game.playlists?.get(arg);
-      if (playlist) return playlist;
-      playlist = game.playlists?.getName(arg);
-      if (playlist) return playlist;
+  async function doSendTheatreMessage(arg, message, emote, ttl, deactivate, unstage) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTMACROS.ERRORS.INVALIDACTOR"));
+    await activateActor(actor);
+    const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
+    if (!navItem.classList.contains("theatre-control-nav-bar-item-speakingas")) {
+      theatre.handleNavItemMouseUp({
+        currentTarget: navItem,
+        button: 0
+      });
     }
-  }
-  function coerceSound(arg, playlist) {
-    if (arg instanceof PlaylistSound) return arg;
-    const actualPlaylist = coercePlaylist(playlist);
-    if (actualPlaylist && typeof arg === "string") {
-      let sound = actualPlaylist.sounds.get(arg);
-      if (sound instanceof PlaylistSound) return sound;
-      sound = actualPlaylist.sounds.getName(arg);
-      if (sound instanceof PlaylistSound) return sound;
+    const chatBox = $("#chat-message");
+    const previousValue = chatBox.val() ?? "";
+    const prevFocus = chatBox.is(":selected");
+    theatre.setUserTyping(game.user?.id, theatre.speakingAs);
+    if (emote) {
+      theatre.isDelayEmote = true;
+      theatre.setUserEmote(
+        game.user?.id,
+        `theatre-${actor.id}`,
+        "emote",
+        emote,
+        false
+      );
+      if (ttl) {
+        setTimeout(() => {
+          theatre.isDelayEmote = false;
+          theatre.setUserEmote(
+            game.user?.id,
+            `theatre-${actor.id}`,
+            "emote",
+            "",
+            false
+          );
+        }, ttl);
+      }
+    }
+    chatBox.trigger("focus");
+    chatBox.val(message);
+    chatBox.trigger(
+      jQuery.Event("keydown", {
+        which: 13,
+        keyCode: 13,
+        originalEvent: new KeyboardEvent("keydown", {
+          code: "Enter",
+          key: "Enter",
+          charCode: 13,
+          keyCode: 13,
+          view: window,
+          bubbles: true
+        })
+      })
+    );
+    chatBox.trigger(
+      jQuery.Event("keyup", {
+        which: 13,
+        keyCode: 13,
+        originalEvent: new KeyboardEvent("keyup", {
+          code: "Enter",
+          key: "Enter",
+          charCode: 13,
+          keyCode: 13,
+          view: window,
+          bubbles: true
+        })
+      })
+    );
+    if (!prevFocus) chatBox.trigger("blur");
+    chatBox.val(previousValue);
+    await wait(ttl ?? 0);
+    if (deactivate) theatre.removeInsertById(`theatre-${actor.id}`, false);
+    if (unstage) {
+      theatre.handleNavItemMouseUp({
+        currentTarget: navItem,
+        button: 2,
+        ctrlKey: true
+      });
     }
   }
 
-  // src/lib/misc.ts
-  async function wait(ms) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-
-  // src/lib/activateActor.ts
-  function activateActor(...args) {
-    let actor;
-    let playlist;
-    let sound;
-    let musicWait = 0;
-    let portraitWait = 0;
-    let ttl = 0;
-    if (typeof args[0] === "object") {
-      const params = args[0];
-      actor = coerceActor(params.actor);
-      if (params.playlist) {
-        playlist = coercePlaylist(params.playlist);
-        if (!(playlist instanceof Playlist)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDPLAYLIST"));
-      }
-      if (params.sound && playlist instanceof Playlist) {
-        sound = coerceSound(params.sound, playlist);
-        if (!(sound instanceof PlaylistSound)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDSOUND"));
-      }
-      musicWait = params.musicWait ?? 0;
-      portraitWait = params.portraitWait ?? 0;
-      ttl = params.ttl ?? 0;
-    } else {
-      actor = coerceActor(args[0]);
-    }
+  // src/lib/staging.ts
+  function isActorStaged(arg) {
+    const actor = coerceActor(arg);
     if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
-    if (!theatre.getNavItemById(`theatre-${actor.id}`))
+    return !!theatre.getNavItemById(`theatre-${actor.id}`);
+  }
+  function stageActor(arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+    log("Staging:", actor, isActorStaged(actor));
+    if (!isActorStaged(actor))
       Theatre.addToNavBar(actor);
-    const promises = [];
-    if (playlist instanceof Playlist && sound instanceof PlaylistSound)
-      promises.push(wait(musicWait ?? 0).then(() => {
-        playlist.playSound(sound);
-      }));
-    promises.push(wait(portraitWait ?? 0).then(() => {
+  }
+  function unstageActor(arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+    if (isActorStaged(actor)) {
       theatre.handleNavItemMouseUp({
         currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
-        button: 2
+        button: 2,
+        ctrlKey: true
       });
-    }));
-    if (ttl)
-      promises.push(wait(ttl));
-    return Promise.all(promises).then(() => {
-    });
+    }
   }
 
   // src/module.ts
@@ -105,7 +182,14 @@
       ui.notifications?.error(game.i18n?.format("THEATREINSERTSMACROS.ERRORS.THEATREINSERTSNOTFOUND", { MODULENAME: "Theatre Inserts Macros" }));
     } else {
       const api = {
-        activateActor
+        wait,
+        activateActor,
+        deactivateActor,
+        isActorActive,
+        isActorStaged,
+        stageActor,
+        unstageActor,
+        sendTheatreMessage
       };
       window.TheatreMacros = api;
       log(`Ready!`);

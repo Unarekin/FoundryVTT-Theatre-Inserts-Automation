@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { activateActor } from "./lib/activateActor";
+import { activateActor, deactivateActor, isActorActive } from "./lib/activation";
 import { log } from "./lib/log";
+import { wait } from "./lib/misc";
+import { sendTheatreMessage } from "./lib/sendTheatreMessage";
+import { isActorStaged, stageActor, unstageActor } from "./lib/staging";
 
 
 Hooks.on("ready", () => {
@@ -10,7 +13,14 @@ Hooks.on("ready", () => {
   } else {
 
     const api: object = {
-      activateActor
+      wait,
+      activateActor,
+      deactivateActor,
+      isActorActive,
+      isActorStaged,
+      stageActor,
+      unstageActor,
+      sendTheatreMessage
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

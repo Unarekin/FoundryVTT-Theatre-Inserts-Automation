@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-
-import { log } from "./log";
-
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -13,7 +10,6 @@ import { log } from "./log";
  * @returns {Actor | undefined} {@link Actor} or undefined.
  */
 export function coerceActor(arg: unknown): Actor | undefined {
-  log("Coercing:", arg);
   if (arg instanceof Actor) return arg;
   if (typeof arg === "string") {
     let actor = game.actors?.get(arg);
