@@ -1,5 +1,21 @@
 "use strict";
 (() => {
+  // src/lib/log.ts
+  var LOG_ICON = "\u{1F3AD}";
+  var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
+  var log = wrappedConsoleFunc(console.log);
+  var warn = wrappedConsoleFunc(console.warn);
+  var error = wrappedConsoleFunc(console.error);
+  var info = wrappedConsoleFunc(console.info);
+  function wrappedConsoleFunc(original) {
+    return function(...args) {
+      const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
+      const actualArgs = args;
+      if (shouldLog)
+        original(LOG_PREFIX, "|", ...actualArgs);
+    };
+  }
+
   // src/lib/coercion.ts
   function coerceActor(arg) {
     if (arg instanceof Actor) return arg;
@@ -9,6 +25,28 @@
       actor = game.actors?.getName(arg);
       if (actor) return actor;
     }
+  }
+
+  // src/lib/emotes.ts
+  function setEmote(arg, emote) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    return doSetEmote(actor, emote);
+  }
+  async function doSetEmote(actor, emote) {
+    if (!isActorActive(actor)) await activateActor(actor);
+    theatre.setUserEmote(
+      game.user?.id,
+      `theatre-${actor.id}`,
+      "emote",
+      emote,
+      false
+    );
+  }
+  function clearEmote(arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
   }
 
   // src/lib/misc.ts
@@ -41,6 +79,7 @@
         ctrlKey: true
       });
     }
+    clearEmote(actor);
     return wait(1e3);
   }
   function isActorActive(arg) {
@@ -49,22 +88,6 @@
     const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
     if (!navItem) return false;
     return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
-  }
-
-  // src/lib/log.ts
-  var LOG_ICON = "\u{1F3AD}";
-  var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
-  var log = wrappedConsoleFunc(console.log);
-  var warn = wrappedConsoleFunc(console.warn);
-  var error = wrappedConsoleFunc(console.error);
-  var info = wrappedConsoleFunc(console.info);
-  function wrappedConsoleFunc(original) {
-    return function(...args) {
-      const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
-      const actualArgs = args;
-      if (shouldLog)
-        original(LOG_PREFIX, "|", ...actualArgs);
-    };
   }
 
   // src/lib/staging.ts
@@ -133,22 +156,26 @@
     });
   }
 
+  // src/lib/api.ts
+  var api_default = {
+    wait,
+    activateActor,
+    deactivateActor,
+    isActorActive,
+    isActorStaged,
+    stageActor,
+    unstageActor,
+    sendMessage,
+    setEmote,
+    clearEmote
+  };
+
   // src/module.ts
   Hooks.on("ready", () => {
     if (game instanceof Game && !game.modules.get("theatre")?.active) {
       ui.notifications?.error(game.i18n?.format("THEATREAUTOMATION.ERRORS.THEATREINSERTSNOTFOUND", { MODULENAME: "Theatre Inserts Automation" }));
     } else {
-      const api = {
-        wait,
-        activateActor,
-        deactivateActor,
-        isActorActive,
-        isActorStaged,
-        stageActor,
-        unstageActor,
-        sendMessage
-      };
-      window.TheatreAutomation = api;
+      window.TheatreAutomation = api_default;
       log(`Ready!`);
     }
   });

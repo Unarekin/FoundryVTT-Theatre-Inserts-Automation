@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { coerceActor } from "./coercion";
+import { clearEmote } from "./emotes";
 import { wait } from "./misc";
 
 /**
@@ -70,6 +68,8 @@ export function deactivateActor(arg: unknown, unstage?: boolean): Promise<void> 
       ctrlKey: true
     });
   }
+
+  clearEmote(actor);
   return wait(1000);
 }
 
