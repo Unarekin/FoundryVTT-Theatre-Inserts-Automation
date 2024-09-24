@@ -7,8 +7,11 @@ import { isNarratorBarActive } from "./narration";
  * @returns {string[]}
  */
 export function getStandingAnimations(): string[] {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-  return Object.keys((<any>Theatre).STANDING_ANIMS);
+  return [
+    "none",
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    ...Object.keys((<any>Theatre).STANDING_ANIMS)
+  ];
 }
 
 /**
@@ -47,6 +50,7 @@ export function setTextStanding(standing: string, token: Token): void
  */
 export function setTextStanding(standing: string, name: "narrator"): void
 export function setTextStanding(standing: string, arg?: unknown): void {
+  if (!getStandingAnimations().includes(standing)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDSTANDING", { standing }));
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else if (arg) {

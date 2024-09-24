@@ -1071,9 +1071,14 @@ async function introduceActor(actor, message, portraitWait = 0, musicWait = 0, s
 
 // src/lib/standing.ts
 function getStandingAnimations() {
-  return Object.keys(Theatre.STANDING_ANIMS);
+  return [
+    "none",
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    ...Object.keys(Theatre.STANDING_ANIMS)
+  ];
 }
 function setTextStanding(standing, arg) {
+  if (!getStandingAnimations().includes(standing)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDSTANDING", { standing }));
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else if (arg) {
