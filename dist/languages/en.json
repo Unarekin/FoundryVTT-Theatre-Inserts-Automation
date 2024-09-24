@@ -9,7 +9,10 @@
       "ACTORNOTSTAGED": "Actor not yet staged.",
       "ACTORNOTACTIVE": "Actor insert is not activated.",
       "INVALIDFLYIN": "Unknown flyin: {flyin}.",
-      "INVALIDSTANDING": "Unknown standing: {standing}."
+      "INVALIDSTANDING": "Unknown standing: {standing}.",
+      "INVALIDFONT": "Unknown font: {font}.",
+      "INVALIDCOLOR": "Invalid font color: {color}.",
+      "INVALIDSIZE": "Invalid font size: {size}"
     },
     "DIALOGS": {
       "INTRO": {
