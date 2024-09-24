@@ -986,10 +986,11 @@ function sendMessage(arg, message, flyin = "typewriter") {
   if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   if (!isActorStaged(actor)) stageActor(actor);
   return (isActorActive(actor) ? Promise.resolve() : activateActor(actor)).then(() => {
-    log("Activated");
     if (!isActorSpeaking(actor)) setSpeakingAs(actor);
+    const oldFlyin = getTextFlyin();
     setTextFlyin(flyin);
     sendChatMessage(actor.name, message);
+    setTextFlyin(oldFlyin);
   });
 }
 function setSpeakingAs(actor) {
@@ -1067,7 +1068,8 @@ var api_default = {
   deactivateNarratorBar,
   sendNarration,
   setTextFlyin,
-  getTextFlyin
+  getTextFlyin,
+  FLYIN_NAMES
 };
 
 // src/module.ts

@@ -1,8 +1,7 @@
 import { activateActor, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
 import { Flyin } from "./constants";
-import { setTextFlyin } from "./emotes";
-import { log } from "./log";
+import { getTextFlyin, setTextFlyin } from "./emotes";
 import { sendChatMessage } from "./misc";
 import { isActorStaged, stageActor } from "./staging";
 
@@ -10,21 +9,21 @@ import { isActorStaged, stageActor } from "./staging";
  * Sends a message as an {@link Actor}
  * @param {string} id The {@link Actor}'s id
  * @param {string} message 
- * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type
+ * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type -- Will be reset after this message
  */
 export function sendMessage(id: string, message: string, flyin?: Flyin): Promise<void>
 /**
  * Sends a message as an {@link Actor}
  * @param {string} name The {@link Actor}'s name
  * @param {string} message 
- * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type
+ * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type -- Will be reset after this message
  */
 export function sendMessage(name: string, message: string, flyin?: Flyin): Promise<void>
 /**
  * Sends a message as an {@link Actor}
  * @param {Actor} actor The {@link Actor} object
  * @param {string} message 
- * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type
+ * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type -- Will be reset after this message
  */
 export function sendMessage(actor: Actor, message: string, flyin?: Flyin): Promise<void>
 export function sendMessage(arg: unknown, message: string, flyin: Flyin = "typewriter"): Promise<void> {
@@ -33,11 +32,12 @@ export function sendMessage(arg: unknown, message: string, flyin: Flyin = "typew
   if (!isActorStaged(actor)) stageActor(actor);
   return (isActorActive(actor) ? Promise.resolve() : activateActor(actor))
     .then(() => {
-      log("Activated");
       if (!isActorSpeaking(actor)) setSpeakingAs(actor);
+      const oldFlyin = getTextFlyin();
       setTextFlyin(flyin);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       sendChatMessage((<any>actor).name, message);
+      setTextFlyin(oldFlyin);
     })
 }
 
