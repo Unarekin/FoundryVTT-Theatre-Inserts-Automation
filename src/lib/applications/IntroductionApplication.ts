@@ -5,6 +5,7 @@ import { DynamicSelect } from '../dynamicSelect.js';
 import { getActorContext, getPlaylistContext } from "./sharedFunctionality";
 import { MaybePromise, GetDataReturnType } from "@league-of-foundry-developers/foundry-vtt-types/src/types/utils.mjs";
 import { coerceActor, coercePlaylist, coerceSound } from "../coercion";
+import { InvalidActorError } from "../errors";
 
 
 
@@ -38,7 +39,7 @@ export class IntroductionApplication extends FormApplication<FormApplicationOpti
     if (formData) {
 
       const actor = (formData.actorSelect ? coerceActor(formData.actorSelect) : null);
-      if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+      if (!(actor instanceof Actor)) throw new InvalidActorError();
 
       let playlist: Playlist | undefined;
       let sound: PlaylistSound | undefined;
@@ -115,6 +116,7 @@ export class IntroductionApplication extends FormApplication<FormApplicationOpti
   activateListeners(html: JQuery<HTMLElement>) {
     super.activateListeners(html);
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     new DynamicSelect("#actorSelect", {
       name: "actorSelect",
       onChange: (value: string, text: string, option: unknown) => {
@@ -137,9 +139,6 @@ export class IntroductionApplication extends FormApplication<FormApplicationOpti
 
   // #region EventEmitter Implementation
 
-  // [EventEmitter.captureRejectionSymbol]?<K>(error: Error, event: keyof EventMap | K, ...args: K extends keyof EventMap ? EventMap[K] : never): void {
-  //   throw new Error("Method not implemented.");
-  // }
   addListener<K>(eventName: keyof EventMap | K, listener: K extends keyof EventMap ? EventMap[K] extends unknown[] ? (...args: EventMap[K]) => void : never : never): this {
     this.events.addListener<K>(eventName, listener);
     return this;

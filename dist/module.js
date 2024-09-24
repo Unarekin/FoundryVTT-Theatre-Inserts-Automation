@@ -480,21 +480,64 @@ function createChatMessage(alias, message) {
   };
 }
 
+// src/lib/errors/LocalizedError.ts
+var LocalizedError = class extends Error {
+  constructor(message, subs) {
+    if (message) super(game.i18n?.format(`THEATREAUTOMATION.ERRORS.${message}`));
+    super();
+  }
+};
+
+// src/lib/errors/ActorNotActiveError.ts
+var ActorNotActiveError = class extends LocalizedError {
+  constructor() {
+    super("ACTORNOTACTIVE");
+  }
+};
+
+// src/lib/errors/ActorNotStagedError.ts
+var ActorNotStagedError = class extends LocalizedError {
+  constructor() {
+    super("ACTORNOTSTAGED");
+  }
+};
+
+// src/lib/errors/InvalidActorError.ts
+var InvalidActorError = class extends LocalizedError {
+  constructor() {
+    super("INVALIDACTOR");
+  }
+};
+
+// src/lib/errors/InvalidStandingError.ts
+var InvalidStandingError = class extends LocalizedError {
+  constructor(standing) {
+    super("INVALIDSTANDING", { standing });
+  }
+};
+
+// src/lib/errors/InvalydFlyingError.ts
+var InvalidFlyinError = class extends LocalizedError {
+  constructor(flyin) {
+    super("INVALIDFLYIN", { flyin });
+  }
+};
+
 // src/lib/staging.ts
 function isActorStaged(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   return !!theatre.getNavItemById(`theatre-${actor.id}`);
 }
 function stageActor(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   if (!isActorStaged(actor))
     Theatre.addToNavBar(actor);
 }
 function unstageActor(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   if (isActorStaged(actor)) {
     theatre.handleNavItemMouseUp({
       currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
@@ -507,7 +550,7 @@ function unstageActor(arg) {
 // src/lib/activation.ts
 function activateActor(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   if (!isActorStaged(actor)) stageActor(actor);
   theatre.handleNavItemMouseUp({
     currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
@@ -517,7 +560,7 @@ function activateActor(arg) {
 }
 function deactivateActor(arg, unstage) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   theatre.removeInsertById(`theatre-${actor.id}`, false);
   if (unstage) {
     theatre.handleNavItemMouseUp({
@@ -530,7 +573,7 @@ function deactivateActor(arg, unstage) {
 }
 function isActorActive(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
   if (!navItem) return false;
   return navItem.classList.contains("theatre-control-nav-bar-item-active");
@@ -557,7 +600,7 @@ function currentlyActive() {
 // src/lib/emotes.ts
 function setEmote(arg, emote) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   return doSetEmote(actor, emote);
 }
 async function doSetEmote(actor, emote) {
@@ -572,7 +615,7 @@ async function doSetEmote(actor, emote) {
 }
 function clearEmote(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
 }
 
@@ -601,13 +644,13 @@ function isValidFlyin(name) {
   return getFlyinAnimations().includes(name);
 }
 function setTextFlyin(flyin, arg) {
-  if (!isValidFlyin(flyin)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDFLYIN", { flyin }));
+  if (!isValidFlyin(flyin)) throw new InvalidFlyinError(flyin);
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textflyin", flyin);
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-    if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    if (!isActorActive(actor)) throw new ActorNotActiveError();
     theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textflyin", flyin, false);
   } else {
     theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textflyin", flyin, false);
@@ -618,14 +661,14 @@ function getTextFlyin(arg) {
     return theatre.theatreNarrator.getAttribute("textflyin") ?? getFlyinAnimations()[0];
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
     return theatre.getInsertById(`theatre-${actor.id}`).textFlyin;
   } else if (isNarratorBarActive()) {
     return theatre.theatreNarrator.getAttribute("textflyin") ?? "";
   } else if (theatre.speakingAs) {
     return theatre.getInsertById(theatre.speakingAs).textFlyin ?? "";
   } else {
-    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    throw new InvalidActorError();
   }
 }
 
@@ -866,7 +909,7 @@ var IntroductionApplication = class extends FormApplication {
     log("updateObject:", formData);
     if (formData) {
       const actor = formData.actorSelect ? coerceActor(formData.actorSelect) : null;
-      if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+      if (!(actor instanceof Actor)) throw new InvalidActorError();
       let playlist;
       let sound;
       if (formData.soundSelect) {
@@ -947,9 +990,6 @@ var IntroductionApplication = class extends FormApplication {
     });
   }
   // #region EventEmitter Implementation
-  // [EventEmitter.captureRejectionSymbol]?<K>(error: Error, event: keyof EventMap | K, ...args: K extends keyof EventMap ? EventMap[K] : never): void {
-  //   throw new Error("Method not implemented.");
-  // }
   addListener(eventName, listener) {
     this.events.addListener(eventName, listener);
     return this;
@@ -1010,7 +1050,7 @@ var IntroductionApplication = class extends FormApplication {
 // src/lib/messaging.ts
 function sendMessage(arg, message, flyin = "typewriter") {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   if (!isActorStaged(actor)) stageActor(actor);
   return (isActorActive(actor) ? Promise.resolve() : activateActor(actor)).then(() => {
     if (!isActorSpeaking(actor)) setSpeakingAs(actor);
@@ -1021,8 +1061,8 @@ function sendMessage(arg, message, flyin = "typewriter") {
   });
 }
 function setSpeakingAs(actor) {
-  if (!isActorStaged(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.ACTORNOTSTAGED"));
-  if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.ACTORNOTACTIVE"));
+  if (!isActorStaged(actor)) throw new ActorNotStagedError();
+  if (!isActorActive) throw new ActorNotActiveError();
   const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
   if (!navItem.classList.contains("theatre-control-nav-bar-item-speakingas")) {
     theatre.handleNavItemMouseUp({
@@ -1033,7 +1073,7 @@ function setSpeakingAs(actor) {
 }
 function isActorSpeaking(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
   return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
 }
@@ -1047,7 +1087,7 @@ function playSound(sound) {
 async function getActorIntroData(selectedActor) {
   return new Promise((resolve, reject) => {
     const actor = coerceActor(selectedActor);
-    if (selectedActor !== void 0 && !(actor instanceof Actor)) reject(new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR")));
+    if (selectedActor !== void 0 && !(actor instanceof Actor)) reject(new InvalidActorError());
     new IntroductionApplication({
       ...actor ? { selectedActor: actor } : {}
     }).once("submit", resolve).once("cancel", () => {
@@ -1057,7 +1097,7 @@ async function getActorIntroData(selectedActor) {
 }
 async function introduceActor(actor, message, portraitWait = 0, musicWait = 0, sound, closeWait = 0) {
   const actualActor = coerceActor(actor);
-  if (!(actualActor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actualActor instanceof Actor)) throw new InvalidActorError();
   const promises = [];
   if (sound instanceof PlaylistSound)
     promises.push(wait(musicWait).then(() => playSound(sound)));
@@ -1084,21 +1124,24 @@ function getStandingAnimations() {
     ...Object.keys(Theatre.STANDING_ANIMS)
   ];
 }
+function isValidStandingAnimation(standing) {
+  return getStandingAnimations().includes(standing);
+}
 function setTextStanding(standing, arg) {
-  if (!getStandingAnimations().includes(standing)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDSTANDING", { standing }));
+  if (!isValidStandingAnimation(standing)) throw new InvalidStandingError(standing);
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-    if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    if (!isActorActive(actor)) throw new ActorNotActiveError();
     theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textstanding", standing, false);
   } else if (theatre.speakingAs) {
     theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textstanding", standing, false);
   } else if (isNarratorBarActive()) {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else {
-    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    throw new InvalidActorError();
   }
 }
 function getTextStanding(arg) {
@@ -1106,14 +1149,14 @@ function getTextStanding(arg) {
     return theatre.theatreNarrator.getAttribute("textstanding");
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
     return theatre.getInsertById(`theatre-${actor.id}`).textStanding;
   } else if (isNarratorBarActive()) {
     return theatre.theatreNarrator.getAttribute("textstanding");
   } else {
     const actor = currentlySpeaking();
     if (actor instanceof Actor) return theatre.getInsertById(`theatre-${actor.id}`).textStanding;
-    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    throw new InvalidActorError();
   }
 }
 

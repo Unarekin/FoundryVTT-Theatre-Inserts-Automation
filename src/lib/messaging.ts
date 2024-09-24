@@ -1,5 +1,6 @@
 import { activateActor, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
+import { ActorNotActiveError, ActorNotStagedError, InvalidActorError } from "./errors";
 import { getTextFlyin, setTextFlyin } from "./flyins";
 
 import { sendChatMessage } from "./misc";
@@ -28,7 +29,7 @@ export function sendMessage(name: string, message: string, flyin?: string): Prom
 export function sendMessage(actor: Actor, message: string, flyin?: string): Promise<void>
 export function sendMessage(arg: unknown, message: string, flyin: string = "typewriter"): Promise<void> {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   if (!isActorStaged(actor)) stageActor(actor);
   return (isActorActive(actor) ? Promise.resolve() : activateActor(actor))
     .then(() => {
@@ -42,8 +43,8 @@ export function sendMessage(arg: unknown, message: string, flyin: string = "type
 }
 
 function setSpeakingAs(actor: Actor): void {
-  if (!isActorStaged(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.ACTORNOTSTAGED"));
-  if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.ACTORNOTACTIVE"));
+  if (!isActorStaged(actor)) throw new ActorNotStagedError();
+  if (!isActorActive) throw new ActorNotActiveError();
 
 
   const navItem: HTMLElement = theatre.getNavItemById(`theatre-${actor.id}`) as HTMLElement;
@@ -77,7 +78,7 @@ export function isActorSpeaking(actor: Actor): boolean
 export function isActorSpeaking(token: Token): boolean
 export function isActorSpeaking(arg: unknown): boolean {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   const navItem: HTMLElement = theatre.getNavItemById(`theatre-${actor.id}`) as HTMLElement;
   return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
 }
