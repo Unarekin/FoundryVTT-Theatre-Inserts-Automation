@@ -3,6 +3,7 @@ import { clearEmote, setEmote } from "./emotes";
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { wait } from "./misc";
+import { activateNarratorBar, deactivateNarratorBar, isNarratorBarActive, sendNarration } from "./narration";
 import { isActorStaged, stageActor, unstageActor } from "./staging";
 
 export default {
@@ -17,5 +18,10 @@ export default {
   setEmote,
   clearEmote,
   getActorIntroData,
-  introduceActor
+  introduceActor,
+
+  isNarratorBarActive,
+  activateNarratorBar,
+  deactivateNarratorBar,
+  sendNarration
 };

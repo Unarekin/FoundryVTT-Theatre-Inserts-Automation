@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { coerceActor } from "./coercion";
+import { TWEEN_WAIT_TIME } from "./constants";
 import { clearEmote } from "./emotes";
 import { wait } from "./misc";
+import { isActorStaged, stageActor } from "./staging";
 
 /**
  * Handles staging and activating the insert for an {@link Actor}
@@ -21,17 +23,14 @@ export function activateActor(actor: Actor): Promise<void>
 export function activateActor(arg: unknown): Promise<void> {
   const actor = coerceActor(arg);
   if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-
-  // Stage if necessary
-  if (!theatre.getNavItemById(`theatre-${actor.id}`))
-    Theatre.addToNavBar(actor);
+  if (!isActorStaged(actor)) stageActor(actor);
 
   theatre.handleNavItemMouseUp({
     currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
     button: 2
   });
 
-  return wait(1000);
+  return wait(TWEEN_WAIT_TIME);
 }
 
 
@@ -70,7 +69,7 @@ export function deactivateActor(arg: unknown, unstage?: boolean): Promise<void> 
   }
 
   clearEmote(actor);
-  return wait(1000);
+  return wait(TWEEN_WAIT_TIME);
 }
 
 
@@ -96,5 +95,5 @@ export function isActorActive(arg: unknown): boolean {
   const navItem: HTMLElement = theatre.getNavItemById(`theatre-${actor.id}`);
   // They are not staged
   if (!navItem) return false;
-  return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
+  return navItem.classList.contains("theatre-control-nav-bar-item-active");
 }
