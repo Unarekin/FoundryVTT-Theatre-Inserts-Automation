@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import api from "./lib/api";
+import { getFlyinAnimations } from "./lib/flyins";
 import { getStandingAnimations } from "./lib/standing";
 
 // Hooks.once("init", async () => {
@@ -23,5 +24,7 @@ Hooks.once("ready", async () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (<any>window).TheatreAutomation.STANDING_NAMES = getStandingAnimations();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (<any>window).TheatreAutomation.FLYIN_NAMES = getFlyinAnimations();
   }
 });

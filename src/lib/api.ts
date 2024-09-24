@@ -1,6 +1,6 @@
 import { activateActor, currentlyActive, currentlySpeaking, deactivateActor, isActorActive } from "./activation";
-import { FLYIN_NAMES } from "./constants";
-import { clearEmote, getTextFlyin, setEmote, setTextFlyin } from "./emotes";
+import { clearEmote, setEmote } from "./emotes";
+import { getTextFlyin, setTextFlyin } from "./flyins";
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { wait } from "./misc";
@@ -29,8 +29,6 @@ export default {
 
   setTextFlyin,
   getTextFlyin,
-
-  FLYIN_NAMES,
 
   getTextStanding,
   setTextStanding,

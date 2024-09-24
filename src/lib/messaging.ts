@@ -1,7 +1,7 @@
 import { activateActor, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
-import { Flyin } from "./constants";
-import { getTextFlyin, setTextFlyin } from "./emotes";
+import { getTextFlyin, setTextFlyin } from "./flyins";
+
 import { sendChatMessage } from "./misc";
 import { isActorStaged, stageActor } from "./staging";
 
@@ -11,22 +11,22 @@ import { isActorStaged, stageActor } from "./staging";
  * @param {string} message 
  * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type -- Will be reset after this message
  */
-export function sendMessage(id: string, message: string, flyin?: Flyin): Promise<void>
+export function sendMessage(id: string, message: string, flyin?: string): Promise<void>
 /**
  * Sends a message as an {@link Actor}
  * @param {string} name The {@link Actor}'s name
  * @param {string} message 
  * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type -- Will be reset after this message
  */
-export function sendMessage(name: string, message: string, flyin?: Flyin): Promise<void>
+export function sendMessage(name: string, message: string, flyin?: string): Promise<void>
 /**
  * Sends a message as an {@link Actor}
  * @param {Actor} actor The {@link Actor} object
  * @param {string} message 
  * @param {Flyin} [flyin="typewriter"] {@link Flyin} Text fly-in animation type -- Will be reset after this message
  */
-export function sendMessage(actor: Actor, message: string, flyin?: Flyin): Promise<void>
-export function sendMessage(arg: unknown, message: string, flyin: Flyin = "typewriter"): Promise<void> {
+export function sendMessage(actor: Actor, message: string, flyin?: string): Promise<void>
+export function sendMessage(arg: unknown, message: string, flyin: string = "typewriter"): Promise<void> {
   const actor = coerceActor(arg);
   if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   if (!isActorStaged(actor)) stageActor(actor);
