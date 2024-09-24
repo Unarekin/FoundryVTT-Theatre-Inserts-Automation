@@ -443,28 +443,7 @@ function coerceSound(arg, playlist) {
 // src/lib/constants.ts
 var TWEEN_WAIT_TIME = 1500;
 var NARRATOR_WAIT_TIME = 500;
-
-// src/lib/emotes.ts
-function setEmote(arg, emote) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-  return doSetEmote(actor, emote);
-}
-async function doSetEmote(actor, emote) {
-  if (!isActorActive(actor)) await activateActor(actor);
-  theatre.setUserEmote(
-    game.user?.id,
-    `theatre-${actor.id}`,
-    "emote",
-    emote,
-    false
-  );
-}
-function clearEmote(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-  theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
-}
+var FLYIN_NAMES = ["typewriter", "fadein", "slidein", "scalein", "fallin", "spin", "spinscale", "outlaw", "vortex", "assemble"];
 
 // src/lib/misc.ts
 async function wait(ms) {
@@ -474,7 +453,6 @@ async function wait(ms) {
 }
 function sendChatMessage(alias, message) {
   const chatMessage = createChatMessage(alias, message);
-  log("Sending:", chatMessage);
   Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
 function createChatMessage(alias, message) {
@@ -514,6 +492,73 @@ function createChatMessage(alias, message) {
       lastModifiedBy: game.user?.id
     }
   };
+}
+
+// src/lib/narration.ts
+function isNarratorBarActive() {
+  return $(".theatre-control-btn .theatre-icon-narrator").parent().hasClass("theatre-control-nav-bar-item-speakingas");
+}
+async function activateNarratorBar() {
+  theatre.toggleNarratorBar(true, false);
+  await wait(NARRATOR_WAIT_TIME);
+}
+async function deactivateNarratorBar() {
+  theatre.toggleNarratorBar(false, false);
+  await wait(NARRATOR_WAIT_TIME);
+}
+async function sendNarration(message) {
+  if (!isNarratorBarActive()) await activateNarratorBar();
+  sendChatMessage("narrator", message);
+}
+
+// src/lib/emotes.ts
+function setEmote(arg, emote) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  return doSetEmote(actor, emote);
+}
+async function doSetEmote(actor, emote) {
+  if (!isActorActive(actor)) await activateActor(actor);
+  theatre.setUserEmote(
+    game.user?.id,
+    `theatre-${actor.id}`,
+    "emote",
+    emote,
+    false
+  );
+}
+function clearEmote(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
+}
+function setTextFlyin(flyin, arg) {
+  if (!FLYIN_NAMES.includes(flyin)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDFLYIN", { flyin }));
+  if (arg === "narrator") {
+    theatre.theatreNarrator.setAttribute("textflyin", flyin);
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+    if (!isActorActive(actor)) throw new Error("THEATREAUTOMATION.ERRORS.ACTORNOTACTIVE");
+    theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textflyin", flyin, false);
+  } else {
+    theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textflyin", flyin, false);
+  }
+}
+function getTextFlyin(arg) {
+  if (arg === "narrator") {
+    return theatre.theatreNarrator.getAttribute("textflyin") ?? FLYIN_NAMES[0];
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+    return theatre.getInsertById(`theatre-${actor.id}`).textFlyin;
+  } else if (isNarratorBarActive()) {
+    return theatre.theatreNarrator.getAttribute("textflyin");
+  } else if (theatre.speakingAs) {
+    return theatre.getInsertById(theatre.speakingAs).textFlyin ?? FLYIN_NAMES[0];
+  } else {
+    throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+  }
 }
 
 // src/lib/staging.ts
@@ -936,14 +981,16 @@ var IntroductionApplication = class extends FormApplication {
 };
 
 // src/lib/messaging.ts
-function sendMessage(arg, message) {
+function sendMessage(arg, message, flyin = "typewriter") {
   const actor = coerceActor(arg);
   if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   if (!isActorStaged(actor)) stageActor(actor);
   return (isActorActive(actor) ? Promise.resolve() : activateActor(actor)).then(() => {
-    log("Activated");
     if (!isActorSpeaking(actor)) setSpeakingAs(actor);
+    const oldFlyin = getTextFlyin();
+    setTextFlyin(flyin);
     sendChatMessage(actor.name, message);
+    setTextFlyin(oldFlyin);
   });
 }
 function setSpeakingAs(actor) {
@@ -1002,23 +1049,6 @@ async function introduceActor(actor, message, portraitWait = 0, musicWait = 0, s
   await Promise.all(promises);
 }
 
-// src/lib/narration.ts
-function isNarratorBarActive() {
-  return $(".theatre-control-btn .theatre-icon-narrator").parent().hasClass("theatre-control-nav-bar-item-speakingas");
-}
-async function activateNarratorBar() {
-  theatre.toggleNarratorBar(true, false);
-  await wait(NARRATOR_WAIT_TIME);
-}
-async function deactivateNarratorBar() {
-  theatre.toggleNarratorBar(false, false);
-  await wait(NARRATOR_WAIT_TIME);
-}
-async function sendNarration(message) {
-  if (!isNarratorBarActive()) await activateNarratorBar();
-  sendChatMessage("narrator", message);
-}
-
 // src/lib/api.ts
 var api_default = {
   wait,
@@ -1036,7 +1066,10 @@ var api_default = {
   isNarratorBarActive,
   activateNarratorBar,
   deactivateNarratorBar,
-  sendNarration
+  sendNarration,
+  setTextFlyin,
+  getTextFlyin,
+  FLYIN_NAMES
 };
 
 // src/module.ts
