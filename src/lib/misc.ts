@@ -20,7 +20,7 @@ export function sendChatMessage(alias: string, message: string) {
   const chatMessage = createChatMessage(alias, message);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
   const actualMessage = ChatMessage.create(chatMessage as any);
-  log(actualMessage);
+  actualMessage.then((...args: unknown[]) => { log("Message:", ...args) });
   // Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
 
