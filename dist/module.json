@@ -42,9 +42,15 @@
   "packs": [
     {
       "name": "theatre-automation-macros",
-      "label": "Theatre Inserts Automation Macros",
+      "label": "Theatre Automation Macros",
       "path": "./packs/theatre-automation-macros",
       "type": "Macro"
+    },
+    {
+      "name": "theatre-automation-rolltables",
+      "label": "Theatre Automation RollTables",
+      "path": "./packs/theatre-automation-rolltables",
+      "type": "RollTable"
     }
   ],
   "url": "#{URL}#",
