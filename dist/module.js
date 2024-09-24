@@ -453,7 +453,8 @@ async function wait(ms) {
 }
 function sendChatMessage(alias, message) {
   const chatMessage = createChatMessage(alias, message);
-  Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
+  const actualMessage = ChatMessage.create(chatMessage);
+  log(actualMessage);
 }
 function createChatMessage(alias, message) {
   return {
