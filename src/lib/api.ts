@@ -1,5 +1,5 @@
 import { activateActor, deactivateActor, isActorActive } from "./activation";
-import { clearEmote, setEmote } from "./emotes";
+import { clearEmote, getTextFlyin, setEmote, setTextFlyin } from "./emotes";
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { wait } from "./misc";
@@ -23,5 +23,8 @@ export default {
   isNarratorBarActive,
   activateNarratorBar,
   deactivateNarratorBar,
-  sendNarration
+  sendNarration,
+
+  setTextFlyin,
+  getTextFlyin
 };
