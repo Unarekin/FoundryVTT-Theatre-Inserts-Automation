@@ -454,7 +454,9 @@ async function wait(ms) {
 function sendChatMessage(alias, message) {
   const chatMessage = createChatMessage(alias, message);
   const actualMessage = ChatMessage.create(chatMessage);
-  log(actualMessage);
+  actualMessage.then((...args) => {
+    log("Message:", ...args);
+  });
 }
 function createChatMessage(alias, message) {
   return {
