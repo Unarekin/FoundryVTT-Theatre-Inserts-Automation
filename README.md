@@ -1,84 +1,56 @@
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Unarekin/FoundryVTT-Module-Template/main.yml)
-![GitHub License](https://img.shields.io/github/license/Unarekin/FoundryVTT-Module-Template)
-![GitHub package.json version](https://img.shields.io/github/package-json/v/Unarekin/FoundryVTT-Module-Template)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Unarekin/FoundryVTT-Theatre-Inserts-Automation/main.yml)
+![GitHub License](https://img.shields.io/github/license/Unarekin/FoundryVTT-Theatre-Inserts-Automation)
+![GitHub package.json version](https://img.shields.io/github/package-json/v/Unarekin/FoundryVTT-Theatre-Inserts-Automation)
 
-# What is This?
+# Theatre Inserts Automation
 
-This is a version of [the League of Foundry Developers module template](https://github.com/League-of-Foundry-Developers/FoundryVTT-Module-Template) with some customizations to suit my particular preferences.
+This module provides some convenience functions for interacting with the [Theatre Inserts](https://github.com/League-of-Foundry-Developers/fvtt-module-theatre) module.
 
-## Key Features
+This module began as an attempt to update the macros posted in [this reddit thread](https://www.reddit.com/r/FoundryVTT/comments/qhpgg0/comment/hie32h9/) several years ago, which have since stopped functioning.
 
-- esbuild build pipeline
-- Supports TypeScript and SASS
-- Supports language definitions being split into multiple JSON files, for easier organizing of larger projects.
-- Fixes [an issue](https://github.com/League-of-Foundry-Developers/FoundryVTT-Module-Template/issues/26) from the original repository, a PR for which is still waiting to be merged.
-- Lints code with ESLint and caching, to prevent having to lint the entire project every single time.
+As the tweaks and updates I was adding grew, it became more reasonable to maintain the code as part of a module.
 
-# Setup Instructions
+The module contains a few sample macros for interacting with the module's provided functionality,
 
-The first step is to fork the repository into your own, then clone that.
+# Prerequisites
 
-After that, you will likely want to ensure that `build.mjs` has execute permissions
+- [Theatre Inserts](https://github.com/League-of-Foundry-Developers/fvtt-module-theatre)
+  - [libWrapper](https://github.com/ruipin/fvtt-lib-wrapper) - Required by Theatre Inserts
+  - [socketlib](https://github.com/manuelVo/foundryvtt-socketlib) - Required by Theatre Inserts
 
-On Linux:
+The module is developed and tested against FoundryVTT v12, but doesn't do anything terribly ambitious in regards to interacting with Foundry, so should maintain backwards compatibility with v11.
 
-```console
-chmod +x build.mjs
+# Example Usage
+
+### Sending simple messages
+
+This snippet will send a couple of text messages, waiting for a couple of seconds between.
+
+```javascript
+await TheatreAutomation.sendMessage("MyActor", "This is my message!");
+await TheatreAutomation.wait(2000);
+await TheatreAutomation.sendMessage(
+  "MyActor",
+  "And here's a second message, 2 seconds later."
+);
+await TheatreAutomation.wait(3000);
+await TheatreAutomation.deactivateActor("MyActor");
 ```
 
-On Windows, it may actually just be simpler to adjust the `build` and `build:prod` scripts in `package.json` to call `node build.mjs` rather than `build.js` directly.
+### Dramatic introduction
 
-## Installing dependencies
+This snippet will display a dialog, allowing you to select an actor, optional intro sound/music, and some other things to display that actor's Theatre Insert, playing the selected sound. You know, for a villain's dramatic entrance with theme music and all.
 
-The build script uses several external dependencies. To install them:
-
-With npm:
-
-```console
-npm install
+```javascript
+const dialogResult = await TheatreAutomation.getActorIntroData();
+if (res) {
+  await TheatreAutomation.introduceActor(
+    dialogResult.selectedActor
+    dialogResult.introMessage,
+    dialogResult.portraitWait,
+    dialogResult.musicWait,
+    dialogResult.selectedSound,
+    dialogResult.closeWait
+  );
+}
 ```
-
-With yarn:
-
-```console
-yarn
-```
-
-Yeah that's it. Easy peasy.
-
-## Building
-
-There are two types of build: development and production. The sole difference between the two is that a production type build does not include sourcemaps.
-
-For a development build:
-
-npm:
-
-```console
-npm run build
-```
-
-yarn:
-
-```console
-yarn build
-```
-
-You can also just run `build.mjs` directly.
-
-For a production build:
-npm:
-
-```console
-npm run build:prod
-```
-
-yarn:
-
-```console
-yarn build:prod
-```
-
-# Versioned Module Release
-
-For instructions on how to build a proper module release, see [the original module's README](https://github.com/League-of-Foundry-Developers/FoundryVTT-Module-Template/blob/master/README.md).
