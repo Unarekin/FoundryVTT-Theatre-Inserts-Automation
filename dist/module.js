@@ -453,7 +453,6 @@ async function wait(ms) {
 }
 function sendChatMessage(alias, message) {
   const chatMessage = createChatMessage(alias, message);
-  log("Sending:", chatMessage);
   Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
 function createChatMessage(alias, message) {
@@ -547,14 +546,16 @@ function setTextFlyin(flyin, arg) {
   }
 }
 function getTextFlyin(arg) {
-  if (arg) {
+  if (arg === "narrator") {
+    return theatre.theatreNarrator.getAttribute("textflyin") ?? FLYIN_NAMES[0];
+  } else if (arg) {
     const actor = coerceActor(arg);
     if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
     return theatre.getInsertById(`theatre-${actor.id}`).textFlyin;
   } else if (isNarratorBarActive()) {
     return theatre.theatreNarrator.getAttribute("textflyin");
   } else if (theatre.speakingAs) {
-    return theatre.getInsertById(theatre.speakingAs).textFlyin;
+    return theatre.getInsertById(theatre.speakingAs).textFlyin ?? FLYIN_NAMES[0];
   } else {
     throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
   }

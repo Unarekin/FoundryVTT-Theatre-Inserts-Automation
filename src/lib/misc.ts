@@ -1,4 +1,3 @@
-import { log } from "./log";
 
 /**
  * Waits a specified amount of time, then resolves.
@@ -18,7 +17,6 @@ export async function wait(ms: number): Promise<void> {
  */
 export function sendChatMessage(alias: string, message: string) {
   const chatMessage = createChatMessage(alias, message);
-  log("Sending:", chatMessage);
   Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
 

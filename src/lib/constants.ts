@@ -5,4 +5,4 @@ export const TWEEN_WAIT_TIME = 1500;
 export const NARRATOR_WAIT_TIME = 500;
 
 export type Flyin = "typewriter" | "fadein" | "slidein" | "scalein" | "fallin" | "spin" | "spinscale" | "outlaw" | "vortex" | "assemble";
-export const FLYIN_NAMES: string[] = ["typewriter", "fadein", "slidein", "scalein", "fallin", "spin", "spinscale", "outlaw", "vortex", "assemble"];
+export const FLYIN_NAMES: Flyin[] = ["typewriter", "fadein", "slidein", "scalein", "fallin", "spin", "spinscale", "outlaw", "vortex", "assemble"];

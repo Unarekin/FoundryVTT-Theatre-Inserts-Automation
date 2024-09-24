@@ -127,7 +127,9 @@ export function getTextFlyin(actor: Actor): Flyin
  */
 export function getTextFlyin(token: Token): Flyin
 export function getTextFlyin(arg?: unknown): Flyin {
-  if (arg) {
+  if (arg === "narrator") {
+    return (theatre.theatreNarrator.getAttribute("textflyin") ?? FLYIN_NAMES[0]) as Flyin;
+  } else if (arg) {
     const actor = coerceActor(arg);
     if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -136,7 +138,7 @@ export function getTextFlyin(arg?: unknown): Flyin {
     return theatre.theatreNarrator.getAttribute("textflyin") as Flyin;
   } else if (theatre.speakingAs) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    return theatre.getInsertById(theatre.speakingAs).textFlyin as Flyin;
+    return (theatre.getInsertById(theatre.speakingAs).textFlyin ?? FLYIN_NAMES[0]) as Flyin;
   } else {
     throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
   }
