@@ -41,9 +41,9 @@
   ],
   "packs": [
     {
-      "name": "other-theatre-macros",
-      "label": "Other Theatre Inserts Macros",
-      "path": "./packs/other-theatre-macros",
+      "name": "theatre-automation-macros",
+      "label": "Theatre Inserts Automation Macros",
+      "path": "./packs/theatre-automation-macros",
       "type": "Macro"
     }
   ],

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -9,8 +8,9 @@
  * @param {unknown} arg A string id or name, or an {@link Actor}
  * @returns {Actor | undefined} {@link Actor} or undefined.
  */
-export function coerceActor(arg: unknown): Actor | undefined {
+export function coerceActor(arg: unknown): Actor | undefined | null {
   if (arg instanceof Actor) return arg;
+  if (arg instanceof Token) return arg.actor;
   if (typeof arg === "string") {
     let actor = game.actors?.get(arg);
     if (actor) return actor;

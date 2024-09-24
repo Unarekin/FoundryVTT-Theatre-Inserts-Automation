@@ -1,3 +1,5 @@
+import { coerceActor, coercePlaylist, coerceSound } from "./coercion";
+
 /**
  * Plays a given {@link PlaylistSound}
  * @param {PlaylistSound} sound {@link PlaylistSound} to play
@@ -57,4 +59,21 @@ function fadeSoundFrom(sound: PlaylistSound, duration: number, startVolume: numb
   sound.sound.volume = startVolume;
 
   return sound.sound.fade(endVolume, { duration });
+}
+
+
+/**
+ * Retrieves a {@link PlaylistSound} named "Intro" on a {@link Playlist} that shares a name with the supplied {@link Actor}
+ * @param {Actor} actor {@link Actor} for which to get the default sound
+ * @returns {PlaylistSound|undefined} The {@link PlaylistSound}, or undefined if it was not found.
+ */
+export function getDefaultIntroSong(actor: unknown): PlaylistSound | undefined {
+  const actualActor = coerceActor(actor);
+  if (!(actualActor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR") || "Invalid actor");
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+  const playlist = coercePlaylist((<any>actualActor).name);
+  if (!(playlist instanceof Playlist)) return;
+
+  const song = coerceSound("Intro", playlist);
+  if (song instanceof PlaylistSound) return song;
 }

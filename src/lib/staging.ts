@@ -18,7 +18,7 @@ export function isActorStaged(name: string): boolean
 export function isActorStaged(actor: Actor): boolean
 export function isActorStaged(arg: unknown): boolean {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   return !!theatre.getNavItemById(`theatre-${actor.id}`);
 }
 
@@ -39,7 +39,7 @@ export function stageActor(name: string): void
 export function stageActor(actor: Actor): void
 export function stageActor(arg: unknown): void {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
 
   if (!isActorStaged(actor))
     Theatre.addToNavBar(actor);
@@ -62,7 +62,7 @@ export function unstageActor(name: string): void
 export function unstageActor(actor: Actor): void
 export function unstageActor(arg: unknown): void {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
 
   if (isActorStaged(actor)) {
     theatre.handleNavItemMouseUp({

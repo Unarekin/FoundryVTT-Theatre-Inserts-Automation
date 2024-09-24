@@ -20,7 +20,7 @@ export function activateActor(name: string): Promise<void>
 export function activateActor(actor: Actor): Promise<void>
 export function activateActor(arg: unknown): Promise<void> {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
 
   // Stage if necessary
   if (!theatre.getNavItemById(`theatre-${actor.id}`))
@@ -56,7 +56,7 @@ export function deactivateActor(name: string, unstage?: boolean): Promise<void>
 export function deactivateActor(actor: Actor, unstage?: boolean): Promise<void>
 export function deactivateActor(arg: unknown, unstage?: boolean): Promise<void> {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
 
   // Deactivate
   theatre.removeInsertById(`theatre-${actor.id}`, false);
@@ -91,7 +91,7 @@ export function isActorActive(name: string): boolean
 export function isActorActive(actor: Actor): boolean
 export function isActorActive(arg: unknown): boolean {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
 
   const navItem: HTMLElement = theatre.getNavItemById(`theatre-${actor.id}`);
   // They are not staged

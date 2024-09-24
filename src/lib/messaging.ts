@@ -22,7 +22,7 @@ export function sendMessage(name: string, message: string): Promise<void>
 export function sendMessage(actor: Actor, message: string): Promise<void>
 export function sendMessage(arg: unknown, message: string): Promise<void> {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   return doSendMessage(actor, message);
 }
 

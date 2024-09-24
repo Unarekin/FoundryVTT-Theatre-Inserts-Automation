@@ -412,11 +412,31 @@ function wrappedConsoleFunc(original) {
 // src/lib/coercion.ts
 function coerceActor(arg) {
   if (arg instanceof Actor) return arg;
+  if (arg instanceof Token) return arg.actor;
   if (typeof arg === "string") {
     let actor = game.actors?.get(arg);
     if (actor) return actor;
     actor = game.actors?.getName(arg);
     if (actor) return actor;
+  }
+}
+function coercePlaylist(arg) {
+  if (arg instanceof Playlist) return arg;
+  if (typeof arg === "string") {
+    let playlist = game.playlists?.get(arg);
+    if (playlist) return playlist;
+    playlist = game.playlists?.getName(arg);
+    if (playlist) return playlist;
+  }
+}
+function coerceSound(arg, playlist) {
+  if (arg instanceof PlaylistSound) return arg;
+  const actualPlaylist = coercePlaylist(playlist);
+  if (actualPlaylist && typeof arg === "string") {
+    let sound = actualPlaylist.sounds.get(arg);
+    if (sound instanceof PlaylistSound) return sound;
+    sound = actualPlaylist.sounds.getName(arg);
+    if (sound instanceof PlaylistSound) return sound;
   }
 }
 
@@ -452,7 +472,7 @@ async function wait(ms) {
 // src/lib/activation.ts
 function activateActor(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   if (!theatre.getNavItemById(`theatre-${actor.id}`))
     Theatre.addToNavBar(actor);
   theatre.handleNavItemMouseUp({
@@ -463,7 +483,7 @@ function activateActor(arg) {
 }
 function deactivateActor(arg, unstage) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   theatre.removeInsertById(`theatre-${actor.id}`, false);
   if (unstage) {
     theatre.handleNavItemMouseUp({
@@ -477,7 +497,7 @@ function deactivateActor(arg, unstage) {
 }
 function isActorActive(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
   if (!navItem) return false;
   return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
@@ -485,25 +505,304 @@ function isActorActive(arg) {
 
 // src/lib/applications/IntroductionApplication.ts
 var import_events = __toESM(require_events());
-var IntroductionApplication = class extends FormApplication {
-  constructor() {
-    super(...arguments);
-    this.events = new import_events.default();
+
+// src/lib/dynamicSelect.js
+var DynamicSelect = class {
+  constructor(element, options = {}) {
+    let defaults = {
+      placeholder: "Select an option",
+      columns: 1,
+      name: "",
+      width: "",
+      height: "",
+      data: [],
+      onChange: function() {
+      }
+    };
+    this.options = Object.assign(defaults, options);
+    this.selectElement = typeof element === "string" ? document.querySelector(element) : element;
+    for (const prop in this.selectElement.dataset) {
+      if (this.options[prop] !== void 0) {
+        this.options[prop] = this.selectElement.dataset[prop];
+      }
+    }
+    this.name = this.selectElement.getAttribute("name") ? this.selectElement.getAttribute("name") : "dynamic-select-" + Math.floor(Math.random() * 1e6);
+    if (!this.options.data.length) {
+      let options2 = this.selectElement.querySelectorAll("option");
+      for (let i = 0; i < options2.length; i++) {
+        this.options.data.push({
+          value: options2[i].value,
+          text: options2[i].innerHTML,
+          img: options2[i].getAttribute("data-img"),
+          selected: options2[i].selected,
+          html: options2[i].getAttribute("data-html"),
+          imgWidth: options2[i].getAttribute("data-img-width"),
+          imgHeight: options2[i].getAttribute("data-img-height")
+        });
+      }
+    }
+    this.element = this._template();
+    this.selectElement.replaceWith(this.element);
+    this._updateSelected();
+    this._eventHandlers();
   }
-  async _updateObject(event, formData) {
+  _template() {
+    let optionsHTML = "";
+    for (let i = 0; i < this.data.length; i++) {
+      let optionWidth = 100 / this.columns;
+      let optionContent = "";
+      if (this.data[i].html) {
+        optionContent = this.data[i].html;
+      } else {
+        optionContent = `
+                    ${this.data[i].img ? `<img src="${this.data[i].img}" alt="${this.data[i].text}" class="${this.data[i].imgWidth && this.data[i].imgHeight ? "dynamic-size" : ""}" style="${this.data[i].imgWidth ? "width:" + this.data[i].imgWidth + ";" : ""}${this.data[i].imgHeight ? "height:" + this.data[i].imgHeight + ";" : ""}">` : ""}
+                    ${this.data[i].text ? '<span class="dynamic-select-option-text">' + this.data[i].text + "</span>" : ""}
+                `;
+      }
+      optionsHTML += `
+                <div class="dynamic-select-option${this.data[i].value == this.selectedValue ? " dynamic-select-selected" : ""}${this.data[i].text || this.data[i].html ? "" : " dynamic-select-no-text"}" data-value="${this.data[i].value}" style="width:${optionWidth}%;${this.height ? "height:" + this.height + ";" : ""}">
+                    ${optionContent}
+                </div>
+            `;
+    }
+    let template = `
+            <div class="dynamic-select ${this.name}"${this.selectElement.id ? ' id="' + this.selectElement.id + '"' : ""} style="${this.width ? "width:" + this.width + ";" : ""}${this.height ? "height:" + this.height + ";" : ""}">
+                <input type="hidden" name="${this.name}" value="${this.selectedValue}">
+                <div class="dynamic-select-header" style="${this.width ? "width:" + this.width + ";" : ""}${this.height ? "height:" + this.height + ";" : ""}"><span class="dynamic-select-header-placeholder">${this.placeholder}</span></div>
+                <div class="dynamic-select-options" style="${this.options.dropdownWidth ? "width:" + this.options.dropdownWidth + ";" : ""}${this.options.dropdownHeight ? "height:" + this.options.dropdownHeight + ";" : ""}">${optionsHTML}</div>
+            </div>
+        `;
+    let element = document.createElement("div");
+    element.innerHTML = template;
+    return element;
+  }
+  _eventHandlers() {
+    this.element.querySelectorAll(".dynamic-select-option").forEach((option) => {
+      option.onclick = () => {
+        this.element.querySelectorAll(".dynamic-select-selected").forEach(
+          (selected) => selected.classList.remove("dynamic-select-selected")
+        );
+        option.classList.add("dynamic-select-selected");
+        this.element.querySelector(".dynamic-select-header").innerHTML = option.innerHTML;
+        this.element.querySelector("input").value = option.getAttribute("data-value");
+        this.data.forEach((data) => data.selected = false);
+        this.data.filter(
+          (data) => data.value == option.getAttribute("data-value")
+        )[0].selected = true;
+        this.element.querySelector(".dynamic-select-header").classList.remove("dynamic-select-header-active");
+        this.options.onChange(
+          option.getAttribute("data-value"),
+          option.querySelector(".dynamic-select-option-text") ? option.querySelector(".dynamic-select-option-text").innerHTML : "",
+          option
+        );
+      };
+    });
+    this.element.querySelector(".dynamic-select-header").onclick = () => {
+      this.element.querySelector(".dynamic-select-header").classList.toggle("dynamic-select-header-active");
+    };
+    if (this.selectElement.id && document.querySelector('label[for="' + this.selectElement.id + '"]')) {
+      document.querySelector(
+        'label[for="' + this.selectElement.id + '"]'
+      ).onclick = () => {
+        this.element.querySelector(".dynamic-select-header").classList.toggle("dynamic-select-header-active");
+      };
+    }
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("." + this.name) && !event.target.closest('label[for="' + this.selectElement.id + '"]')) {
+        this.element.querySelector(".dynamic-select-header").classList.remove("dynamic-select-header-active");
+      }
+    });
+  }
+  _updateSelected() {
+    if (this.selectedValue) {
+      this.element.querySelector(".dynamic-select-header").innerHTML = this.element.querySelector(".dynamic-select-selected").innerHTML;
+    }
+  }
+  get selectedValue() {
+    let selected = this.data.filter((option) => option.selected);
+    selected = selected.length ? selected[0].value : "";
+    return selected;
+  }
+  set data(value) {
+    this.options.data = value;
+  }
+  get data() {
+    return this.options.data;
+  }
+  set selectElement(value) {
+    this.options.selectElement = value;
+  }
+  get selectElement() {
+    return this.options.selectElement;
+  }
+  set element(value) {
+    this.options.element = value;
+  }
+  get element() {
+    return this.options.element;
+  }
+  set placeholder(value) {
+    this.options.placeholder = value;
+  }
+  get placeholder() {
+    return this.options.placeholder;
+  }
+  set columns(value) {
+    this.options.columns = value;
+  }
+  get columns() {
+    return this.options.columns;
+  }
+  set name(value) {
+    this.options.name = value;
+  }
+  get name() {
+    return this.options.name;
+  }
+  set width(value) {
+    this.options.width = value;
+  }
+  get width() {
+    return this.options.width;
+  }
+  set height(value) {
+    this.options.height = value;
+  }
+  get height() {
+    return this.options.height;
+  }
+};
+document.querySelectorAll("[data-dynamic-select]").forEach((select) => new DynamicSelect(select));
+
+// src/lib/applications/sharedFunctionality.ts
+function getActorContext(actor) {
+  const castActor = actor;
+  return {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    id: castActor.id,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    name: castActor.name,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    img: castActor.img,
+    selected: false
+  };
+}
+function getPlaylistContext(playlist) {
+  return {
+    id: playlist.id ?? "",
+    name: playlist.name,
+    sounds: playlist.sounds.map((sound) => getSoundContext(sound))
+  };
+}
+function getSoundContext(sound) {
+  return {
+    id: sound.id ?? "",
+    name: sound.name,
+    duration: sound.sound?.duration || 0,
+    selected: false
+  };
+}
+
+// src/lib/applications/IntroductionApplication.ts
+var IntroductionApplication = class extends FormApplication {
+  constructor(object, options) {
+    const mergedObject = foundry.utils.mergeObject(
+      {
+        musicWait: 0,
+        portraitWait: 0,
+        closeWait: 0,
+        selectedActor: null,
+        selectedSound: null
+      },
+      object
+    );
+    super(mergedObject, options);
+    this.events = new import_events.default();
+    log("Options:", this.options);
+  }
+  _updateObject(_event, formData) {
     log("updateObject:", formData);
+    if (formData) {
+      const actor = formData.actorSelect ? coerceActor(formData.actorSelect) : null;
+      if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+      let playlist;
+      let sound;
+      if (formData.soundSelect) {
+        const [playlistId, soundId] = formData.soundSelect.split("-");
+        playlist = coercePlaylist(playlistId);
+        if (playlist instanceof Playlist) sound = coerceSound(soundId, playlist);
+      }
+      this.object = {
+        selectedActor: actor,
+        selectedSound: sound,
+        musicWait: formData.musicWait ?? 0,
+        portraitWait: formData.portraitWait ?? 0,
+        introMessage: formData.introMessage ?? "",
+        closeWait: formData.closeWait ?? 0
+      };
+    }
     return Promise.resolve();
+  }
+  _render(force, options) {
+    return super._render(force, options).then(() => {
+      this.emit("render");
+    });
+  }
+  async close(options) {
+    await super.close(options);
+    if (options?.submit) this.emit("submit", this.object);
+    else this.emit("cancel");
+    this.emit("close");
+  }
+  getData(options) {
+    const playlists = game.playlists.contents.map((playlist) => getPlaylistContext(playlist));
+    const actors = game.actors.contents.map((actor) => ({
+      ...getActorContext(actor),
+      ...this.object?.selectedActor?.id === actor.id ? { selected: true } : { selected: false }
+    }));
+    const localContext = {
+      actors,
+      playlists,
+      introMessage: this.object.introMessage
+    };
+    const parentContext = super.getData(options);
+    if (typeof parentContext.then === "function") {
+      return parentContext.then((data) => foundry.utils.mergeObject(data, localContext));
+    } else {
+      return foundry.utils.mergeObject(parentContext, localContext);
+    }
   }
   static get defaultOptions() {
     return foundry.utils.mergeObject(
       super.defaultOptions,
       {
-        template: `/modules/${"theatre-inserts-automation"}/templates/intro/application.hbs`
+        title: game.i18n?.localize("THEATREAUTOMATION.DIALOGS.INTRO.TITLE") || "",
+        template: `/modules/${"theatre-inserts-automation"}/templates/intro/application.hbs`,
+        closeOnSubmit: true,
+        submitOnClose: false,
+        submitOnChange: false
       }
     );
   }
   activateListeners(html) {
     super.activateListeners(html);
+    new DynamicSelect("#actorSelect", {
+      name: "actorSelect",
+      onChange: (value, text, option) => {
+        log("Dynamic select:", value, text, option);
+      }
+    });
+    html.find("input[type='number']").on("focus", function() {
+      $(this).trigger("select");
+    });
+    html.find("[data-action='submit']").on("click", (e) => {
+      this.close({ submit: true });
+      e.preventDefault();
+    });
+    html.find("[data-action='cancel']").on("click", (e) => {
+      this.close({ submit: false });
+      e.preventDefault();
+    });
   }
   // #region EventEmitter Implementation
   // [EventEmitter.captureRejectionSymbol]?<K>(error: Error, event: keyof EventMap | K, ...args: K extends keyof EventMap ? EventMap[K] : never): void {
@@ -566,32 +865,21 @@ var IntroductionApplication = class extends FormApplication {
   // #endregion
 };
 
-// src/lib/introduction.ts
-async function introduceActor() {
-  return new Promise((resolve) => {
-    const app = new IntroductionApplication({}, {});
-    app.once("close", (data) => {
-      resolve(data);
-    });
-    app.render(true);
-  });
-}
-
 // src/lib/staging.ts
 function isActorStaged(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   return !!theatre.getNavItemById(`theatre-${actor.id}`);
 }
 function stageActor(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   if (!isActorStaged(actor))
     Theatre.addToNavBar(actor);
 }
 function unstageActor(arg) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   if (isActorStaged(actor)) {
     theatre.handleNavItemMouseUp({
       currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
@@ -604,7 +892,7 @@ function unstageActor(arg) {
 // src/lib/messaging.ts
 function sendMessage(arg, message) {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREINSERTSMACROS.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   return doSendMessage(actor, message);
 }
 async function doSendMessage(actor, message) {
@@ -643,6 +931,44 @@ function createEnterEvent(name) {
   });
 }
 
+// src/lib/sounds.ts
+function playSound(sound) {
+  sound?.parent?.playSound(sound);
+}
+
+// src/lib/introduction.ts
+async function getActorIntroData(selectedActor) {
+  return new Promise((resolve, reject) => {
+    const actor = coerceActor(selectedActor);
+    if (selectedActor !== void 0 && !(actor instanceof Actor)) reject(new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR")));
+    new IntroductionApplication({
+      ...actor ? { selectedActor: actor } : {}
+    }).once("submit", resolve).once("cancel", () => {
+      resolve(void 0);
+    }).render(true);
+  });
+}
+async function introduceActor(actor, message, portraitWait = 0, musicWait = 0, sound, closeWait = 0) {
+  const actualActor = coerceActor(actor);
+  if (!(actualActor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  const promises = [];
+  if (sound instanceof PlaylistSound)
+    promises.push(wait(musicWait).then(() => playSound(sound)));
+  promises.push(wait(portraitWait).then(() => {
+    if (message) return sendMessage(actualActor, message).then(() => {
+      if (closeWait) return wait(closeWait).then(() => {
+        deactivateActor(actualActor);
+      });
+    });
+    else return activateActor(actualActor).then(() => {
+      if (closeWait) return wait(closeWait).then(() => {
+        deactivateActor(actualActor);
+      });
+    });
+  }));
+  await Promise.all(promises);
+}
+
 // src/lib/api.ts
 var api_default = {
   wait,
@@ -655,16 +981,21 @@ var api_default = {
   sendMessage,
   setEmote,
   clearEmote,
+  getActorIntroData,
   introduceActor
 };
 
 // src/module.ts
-Hooks.on("ready", () => {
+Hooks.once("init", async () => {
+  window.TheatreAutomation = api_default;
+  await loadTemplates([
+    `/modules/${"theatre-inserts-automation"}/templates/intro/application.hbs`
+  ]);
+  log(`Initialized`);
+});
+Hooks.once("ready", () => {
   if (game instanceof Game && !game.modules.get("theatre")?.active) {
     ui.notifications?.error(game.i18n?.format("THEATREAUTOMATION.ERRORS.THEATREINSERTSNOTFOUND", { MODULENAME: "Theatre Inserts Automation" }));
-  } else {
-    window.TheatreAutomation = api_default;
-    log(`Ready!`);
   }
 });
 //# sourceMappingURL=module.js.map

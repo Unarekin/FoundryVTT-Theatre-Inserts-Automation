@@ -83,7 +83,6 @@ const STATIC_FILES = [
   { src: "./README.md", dest: "README.md" },
   { src: path.join(SRC_PATH, "fonts"), dest: "fonts" },
   { src: TEMPLATE_PATH, dest: "templates" },
-  { src: STYLE_PATH, dest: "styles" },
 ];
 
 const copyPlugins = [];
