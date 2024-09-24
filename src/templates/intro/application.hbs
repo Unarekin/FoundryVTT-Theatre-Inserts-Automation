@@ -1,0 +1,66 @@
+<form id="introForm" name="introForm" class="editable flexcol" autocomplete="off">
+  <header class="sheet-header">
+    <h1 class="charname">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.TITLE"}}</h1>
+    <p>{{localize "THEATREAUTOMATION.DIALOGS.INTRO.DESC"}}</p>
+  </header>
+  <section>
+    {{!-- Actor selection --}}
+    <div class="form-group">
+      <label for="actorSelect">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.LABELS.ACTORSELECT"}}</label>
+      <select name="actorSelect" id="actorSelect">
+        {{#each actors}}
+          <option data-img="{{img}}" data-img-width="32px" value="{{id}}"{{#if selected}} selected{{/if}}>{{name}}</option>
+        {{/each}}
+      </select>
+      <p class="notes">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.DESCRIPTIONS.ACTORSELECT"}}</p>
+    </div>
+
+    {{!-- Song selection --}}
+    <div class="form-group">
+      <label for="soundSelect">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.LABELS.SOUNDSELECT"}}</label>
+      <select name="soundSelect" id="soundSelect">
+        <option value=""></option>
+        {{#each playlists}}
+          <optgroup label="{{name}}">
+            {{#each sounds}}
+              <option value="{{../id}}-{{id}}"{{#if selected}} selected{{/if}}>{{name}}</option>
+            {{/each}}
+          </optgroup>
+        {{/each}}
+      </select>
+      <p class="notes">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.DESCRIPTIONS.SOUNDSELECT"}}</p>
+    </div>
+
+    {{!-- Music wait --}}
+    <div class="form-group">
+      <label for="musicWait">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.LABELS.MUSICWAIT"}}</label>
+      <input type="number" name="musicWait" id="musicWait" value="{{object.musicWait}}" step="1" min="0">
+      <p class="notes">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.DESCRIPTIONS.MUSICWAIT"}}</p>
+    </div>
+
+    {{!-- Portrait wait --}}
+    <div class="form-group">
+      <label for="portraitWait">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.LABELS.PORTRAITWAIT"}}</label>
+      <input type="number" name="portraitWait" id="portraitWait" value="{{object.portraitWait}}" step="1" min="0">
+      <p class="notes">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.DESCRIPTIONS.PORTRAITWAIT"}}</p>
+    </div>
+
+    {{!-- Close delay --}}
+    <div class="form-group">
+      <label for="closeWait">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.LABELS.CLOSEWAIT"}}</label>
+      <input type="number" name="closeWait" id="closeWait" value="{{object.closeWait}}" step="1" min="0">
+      <p class="notes">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.DESCRIPTIONS.CLOSEWAIT"}}</p>
+    </div>
+
+    {{!-- Intro message --}}
+    <div class="editor-container">
+      <label for="introMessage">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.LABELS.INTROMESSAGE"}}</label>
+      <p class="notes">{{localize "THEATREAUTOMATION.DIALOGS.INTRO.DESCRIPTIONS.INTROMESSAGE"}}</p>
+      <textarea name="introMessage" id="introMessage">{{introMessage}}</textarea>
+    </div>
+  </section>
+  <footer class="sheet-footer flexrow">
+    <button type="button" name="cancelButton" id="cancelButton" data-action="cancel"><i class="fas fa-times"></i>{{localize "THEATREAUTOMATION.DIALOGS.INTRO.BUTTONS.CANCEL"}}</button>
+    <button type="button" name="okButton" id="okButton" data-action="submit"><i class="fas fa-check"></i>{{localize "THEATREAUTOMATION.DIALOGS.INTRO.BUTTONS.OK"}}</button>
+  </footer>
+</form>

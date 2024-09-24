@@ -83,7 +83,7 @@ const STATIC_FILES = [
   { src: "./README.md", dest: "README.md" },
   { src: path.join(SRC_PATH, "fonts"), dest: "fonts" },
   { src: TEMPLATE_PATH, dest: "templates" },
-  { src: STYLE_PATH, dest: "styles" },
+  { src: path.join(SRC_PATH, "packs"), dest: "packs" },
 ];
 
 const copyPlugins = [];
@@ -117,6 +117,7 @@ const buildResults = await build({
   outdir: OUT_PATH,
   sourcemap: __DEV__,
   bundle: true,
+  format: "esm",
   platform: "browser",
   minify: !__DEV__,
   define: {
@@ -127,7 +128,7 @@ const buildResults = await build({
   },
   external: ["*.woff", "*.woff2", "*.otf", "*.ttf", "*.webp"],
   plugins: [
-    nodeExternalsPlugin(),
+    // nodeExternalsPlugin(),
     cleanPlugin({ patterns: "./dist/**" }),
     sassPlugin(),
     ...copyPlugins,

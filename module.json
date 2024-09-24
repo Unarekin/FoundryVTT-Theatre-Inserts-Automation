@@ -1,6 +1,6 @@
 {
-  "id": "module",
-  "title": "New Module",
+  "id": "theatre-inserts-automation",
+  "title": "Theatre Inserts Automation",
   "description": "",
   "version": "#{VERSION}#",
   "library": "false",
@@ -19,7 +19,16 @@
   ],
   "relationships": {
     "systems": [],
-    "requires": []
+    "requires": [
+      {
+        "id": "theatre",
+        "type": "module",
+        "manifest": "https://github.com/League-of-Foundry-Developers/fvtt-module-theatre/releases/latest/download/module.json",
+        "compatibility": {
+          "verified": "2.9.1"
+        }
+      }
+    ]
   },
   "esmodules": ["module.js"],
   "styles": ["styles/module.css"],
@@ -28,6 +37,20 @@
       "lang": "en",
       "name": "English",
       "path": "languages/en.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "theatre-automation-macros",
+      "label": "Theatre Automation Macros",
+      "path": "./packs/theatre-automation-macros",
+      "type": "Macro"
+    },
+    {
+      "name": "theatre-automation-rolltables",
+      "label": "Theatre Automation RollTables",
+      "path": "./packs/theatre-automation-rolltables",
+      "type": "RollTable"
     }
   ],
   "url": "#{URL}#",
