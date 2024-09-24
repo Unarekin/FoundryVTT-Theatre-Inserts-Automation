@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { coerceActor } from "./coercion";
 import { TWEEN_WAIT_TIME } from "./constants";
-// import { clearEmote } from "./emotes";
 import { wait } from "./misc";
 import { isActorStaged, stageActor } from "./staging";
+import { InvalidActorError } from "./errors";
 
 /**
  * Handles staging and activating the insert for an {@link Actor}
@@ -22,7 +22,8 @@ export function activateActor(name: string): Promise<void>
 export function activateActor(actor: Actor): Promise<void>
 export function activateActor(arg: unknown): Promise<void> {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   if (!isActorStaged(actor)) stageActor(actor);
 
   theatre.handleNavItemMouseUp({
@@ -55,7 +56,7 @@ export function deactivateActor(name: string, unstage?: boolean): Promise<void>
 export function deactivateActor(actor: Actor, unstage?: boolean): Promise<void>
 export function deactivateActor(arg: unknown, unstage?: boolean): Promise<void> {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
 
   // Deactivate
   theatre.removeInsertById(`theatre-${actor.id}`, false);
@@ -90,7 +91,7 @@ export function isActorActive(name: string): boolean
 export function isActorActive(actor: Actor): boolean
 export function isActorActive(arg: unknown): boolean {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
 
   const navItem: HTMLElement = theatre.getNavItemById(`theatre-${actor.id}`);
   // They are not staged

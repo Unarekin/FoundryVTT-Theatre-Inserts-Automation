@@ -1,5 +1,6 @@
 import { isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
+import { ActorNotActiveError, InvalidActorError, InvalidFlyinError } from "./errors";
 import { isNarratorBarActive } from "./narration";
 
 /**
@@ -50,13 +51,13 @@ export function setTextFlyin(flyin: string, actor: Actor): void
 export function setTextFlyin(flyin: string, token: Token): void
 export function setTextFlyin(flyin: string, id: "narrator"): void
 export function setTextFlyin(flyin: string, arg?: unknown): void {
-  if (!isValidFlyin(flyin)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDFLYIN", { flyin }));
+  if (!isValidFlyin(flyin)) throw new InvalidFlyinError(flyin);
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textflyin", flyin);
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-    if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    if (!isActorActive(actor)) throw new ActorNotActiveError();
     theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textflyin", flyin, false);
   } else {
     theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textflyin", flyin, false);
@@ -92,7 +93,7 @@ export function getTextFlyin(arg?: unknown): string {
     return (theatre.theatreNarrator.getAttribute("textflyin") ?? getFlyinAnimations()[0]);
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
     return theatre.getInsertById(`theatre-${actor.id}`).textFlyin;
   } else if (isNarratorBarActive()) {
@@ -101,6 +102,6 @@ export function getTextFlyin(arg?: unknown): string {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
     return (theatre.getInsertById(theatre.speakingAs).textFlyin ?? "");
   } else {
-    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    throw new InvalidActorError();
   }
 }

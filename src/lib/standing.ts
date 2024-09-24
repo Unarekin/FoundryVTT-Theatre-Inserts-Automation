@@ -1,5 +1,6 @@
 import { currentlySpeaking, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
+import { ActorNotActiveError, InvalidStandingError, InvalidActorError } from "./errors";
 import { isNarratorBarActive } from "./narration";
 
 /**
@@ -12,6 +13,15 @@ export function getStandingAnimations(): string[] {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     ...Object.keys((<any>Theatre).STANDING_ANIMS)
   ];
+}
+
+/**
+ * Returns whether or not a given string is a valid text standing animation name
+ * @param {string} standing 
+ * @returns 
+ */
+export function isValidStandingAnimation(standing: string): boolean {
+  return getStandingAnimations().includes(standing);
 }
 
 /**
@@ -50,13 +60,13 @@ export function setTextStanding(standing: string, token: Token): void
  */
 export function setTextStanding(standing: string, name: "narrator"): void
 export function setTextStanding(standing: string, arg?: unknown): void {
-  if (!getStandingAnimations().includes(standing)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDSTANDING", { standing }));
+  if (!isValidStandingAnimation(standing)) throw new InvalidStandingError(standing);
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-    if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    if (!isActorActive(actor)) throw new ActorNotActiveError();
     theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textstanding", standing, false);
   } else if (theatre.speakingAs) {
     // Use current
@@ -64,7 +74,7 @@ export function setTextStanding(standing: string, arg?: unknown): void {
   } else if (isNarratorBarActive()) {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else {
-    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"))
+    throw new InvalidActorError();
   }
 }
 
@@ -102,7 +112,7 @@ export function getTextStanding(arg?: unknown): string {
     return theatre.theatreNarrator.getAttribute("textstanding") as string;
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     return theatre.getInsertById(`theatre-${actor.id}`).textStanding as string;
   } else if (isNarratorBarActive()) {
@@ -111,6 +121,6 @@ export function getTextStanding(arg?: unknown): string {
     const actor = currentlySpeaking();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (actor instanceof Actor) return theatre.getInsertById(`theatre-${actor.id}`).textStanding as string;
-    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    throw new InvalidActorError();
   }
 }
