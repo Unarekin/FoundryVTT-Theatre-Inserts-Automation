@@ -1096,6 +1096,8 @@ function getTextStanding(arg) {
   } else if (isNarratorBarActive()) {
     return theatre.theatreNarrator.getAttribute("textstanding");
   } else {
+    const actor = currentlySpeaking();
+    if (actor instanceof Actor) return theatre.getInsertById(`theatre-${actor.id}`).textStanding;
     throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   }
 }

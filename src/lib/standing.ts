@@ -1,4 +1,4 @@
-import { isActorActive } from "./activation";
+import { currentlySpeaking, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
 import { isNarratorBarActive } from "./narration";
 
@@ -104,6 +104,9 @@ export function getTextStanding(arg?: unknown): string {
   } else if (isNarratorBarActive()) {
     return theatre.theatreNarrator.getAttribute("textstanding") as string;
   } else {
+    const actor = currentlySpeaking();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (actor instanceof Actor) return theatre.getInsertById(`theatre-${actor.id}`).textStanding as string;
     throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   }
 }
