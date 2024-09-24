@@ -1,3 +1,4 @@
+import { log } from "./log";
 
 /**
  * Waits a specified amount of time, then resolves.
@@ -17,7 +18,10 @@ export async function wait(ms: number): Promise<void> {
  */
 export function sendChatMessage(alias: string, message: string) {
   const chatMessage = createChatMessage(alias, message);
-  Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+  const actualMessage = ChatMessage.create(chatMessage as any);
+  log(actualMessage);
+  // Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
 
 /**
@@ -61,6 +65,5 @@ export function createChatMessage(alias: string, message: string) {
       modifiedTime: Date.now(),
       lastModifiedBy: game.user?.id
     }
-  }
-
+  };
 }
