@@ -1,0 +1,41 @@
+{
+  "THEATREAUTOMATION": {
+    "ERRORS": {
+      "THEATREINSERTSNOTFOUND": "{MODULENAME} requires that Theatre Inserts be installed and active.",
+      "INVALIDACTOR": "Invalid actor provided.",
+      "INVALIDPLAYLIST": "Invalid Playlist specified.",
+      "INVALIDSOUND": "Invalid Sound specified.",
+      "INVALIDPARAMETERS": "Invalid parameters provided.",
+      "ACTORNOTSTAGED": "Actor not yet staged.",
+      "ACTORNOTACTIVE": "Actor insert is not activated.",
+      "INVALIDFLYIN": "Unknown flyin: {flyin}.",
+      "UNKNOWNSTANDING": "Unknown standing: {standing}."
+    },
+    "DIALOGS": {
+      "INTRO": {
+        "TITLE": "Dramatic Introduction",
+        "DESC": "Select an actor to introduce complete with intro sound (probably music).",
+        "LABELS": {
+          "ACTORSELECT": "Select Actor",
+          "SOUNDSELECT": "Select Intro Sound",
+          "MUSICWAIT": "Sound Wait Time",
+          "CLOSEWAIT": "Close Insert After",
+          "PORTRAITWAIT": "Portrait Wait Time",
+          "INTROMESSAGE": "Introduction Message"
+        },
+        "DESCRIPTIONS": {
+          "ACTORSELECT": "Select the actor you wish to introduce.",
+          "SOUNDSELECT": "Select an optional sound to play on introduction.",
+          "MUSICWAIT": "Length of time, in milliseconds, to wait before starting intro music.",
+          "PORTRAITWAIT": "Length of time, in milliseconds, to wait before showing the actor's Theatre insert.",
+          "INTROMESSAGE": "Message to send as the selected actor, once its Theatre insert is active.",
+          "CLOSEWAIT": "Duration, in milliseconds, to leave the Theatre insert activated.  Set to 0 to not automatically deactivate it."
+        },
+        "BUTTONS": {
+          "OK": "Introduce",
+          "CANCEL": "Cancel"
+        }
+      }
+    }
+  }
+}
