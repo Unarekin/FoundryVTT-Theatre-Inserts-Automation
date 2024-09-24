@@ -393,22 +393,6 @@ var require_events = __commonJS({
   }
 });
 
-// src/lib/log.ts
-var LOG_ICON = "\u{1F3AD}";
-var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
-var log = wrappedConsoleFunc(console.log);
-var warn = wrappedConsoleFunc(console.warn);
-var error = wrappedConsoleFunc(console.error);
-var info = wrappedConsoleFunc(console.info);
-function wrappedConsoleFunc(original) {
-  return function(...args) {
-    const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
-    const actualArgs = args;
-    if (shouldLog)
-      original(LOG_PREFIX, "|", ...actualArgs);
-  };
-}
-
 // src/lib/coercion.ts
 function coerceActor(arg) {
   if (arg instanceof Actor) return arg;
@@ -452,11 +436,11 @@ async function wait(ms) {
   });
 }
 function sendChatMessage(alias, message) {
+  theatre.lastTyping = Date.now();
+  theatre.setUserTyping(game.user?.id, theatre.speakingAs);
+  theatre._sendTypingEvent();
   const chatMessage = createChatMessage(alias, message);
-  const actualMessage = ChatMessage.create(chatMessage);
-  actualMessage.then((...args) => {
-    log("Message:", ...args);
-  });
+  ChatMessage.create(chatMessage);
 }
 function createChatMessage(alias, message) {
   return {
@@ -495,73 +479,6 @@ function createChatMessage(alias, message) {
       lastModifiedBy: game.user?.id
     }
   };
-}
-
-// src/lib/narration.ts
-function isNarratorBarActive() {
-  return $(".theatre-control-btn .theatre-icon-narrator").parent().hasClass("theatre-control-nav-bar-item-speakingas");
-}
-async function activateNarratorBar() {
-  theatre.toggleNarratorBar(true, false);
-  await wait(NARRATOR_WAIT_TIME);
-}
-async function deactivateNarratorBar() {
-  theatre.toggleNarratorBar(false, false);
-  await wait(NARRATOR_WAIT_TIME);
-}
-async function sendNarration(message) {
-  if (!isNarratorBarActive()) await activateNarratorBar();
-  sendChatMessage("narrator", message);
-}
-
-// src/lib/emotes.ts
-function setEmote(arg, emote) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-  return doSetEmote(actor, emote);
-}
-async function doSetEmote(actor, emote) {
-  if (!isActorActive(actor)) await activateActor(actor);
-  theatre.setUserEmote(
-    game.user?.id,
-    `theatre-${actor.id}`,
-    "emote",
-    emote,
-    false
-  );
-}
-function clearEmote(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
-  theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
-}
-function setTextFlyin(flyin, arg) {
-  if (!FLYIN_NAMES.includes(flyin)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDFLYIN", { flyin }));
-  if (arg === "narrator") {
-    theatre.theatreNarrator.setAttribute("textflyin", flyin);
-  } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
-    if (!isActorActive(actor)) throw new Error("THEATREAUTOMATION.ERRORS.ACTORNOTACTIVE");
-    theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textflyin", flyin, false);
-  } else {
-    theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textflyin", flyin, false);
-  }
-}
-function getTextFlyin(arg) {
-  if (arg === "narrator") {
-    return theatre.theatreNarrator.getAttribute("textflyin") ?? FLYIN_NAMES[0];
-  } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
-    return theatre.getInsertById(`theatre-${actor.id}`).textFlyin;
-  } else if (isNarratorBarActive()) {
-    return theatre.theatreNarrator.getAttribute("textflyin");
-  } else if (theatre.speakingAs) {
-    return theatre.getInsertById(theatre.speakingAs).textFlyin ?? FLYIN_NAMES[0];
-  } else {
-    throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
-  }
 }
 
 // src/lib/staging.ts
@@ -610,7 +527,6 @@ function deactivateActor(arg, unstage) {
       ctrlKey: true
     });
   }
-  clearEmote(actor);
   return wait(TWEEN_WAIT_TIME);
 }
 function isActorActive(arg) {
@@ -619,6 +535,107 @@ function isActorActive(arg) {
   const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
   if (!navItem) return false;
   return navItem.classList.contains("theatre-control-nav-bar-item-active");
+}
+function currentlySpeaking() {
+  if (theatre.speakingAs) {
+    const [, id] = theatre.speakingAs.split("-");
+    const actor = coerceActor(id);
+    return actor ?? null;
+  } else {
+    return null;
+  }
+}
+function currentlyActive() {
+  const activeNavItems = $(".theatre-control-nav-bar img.theatre-control-nav-bar-item-active").map(function() {
+    return this.getAttribute("imgid");
+  }).toArray();
+  return activeNavItems.map((elemId) => {
+    const [, id] = elemId.split("-");
+    return game.actors.get(id);
+  }).filter((elem) => !!elem);
+}
+
+// src/lib/narration.ts
+function isNarratorBarActive() {
+  return $(".theatre-control-btn .theatre-icon-narrator").parent().hasClass("theatre-control-nav-bar-item-speakingas");
+}
+async function activateNarratorBar() {
+  theatre.toggleNarratorBar(true, false);
+  await wait(NARRATOR_WAIT_TIME);
+}
+async function deactivateNarratorBar() {
+  theatre.toggleNarratorBar(false, false);
+  await wait(NARRATOR_WAIT_TIME);
+}
+async function sendNarration(message) {
+  if (!isNarratorBarActive()) await activateNarratorBar();
+  sendChatMessage("narrator", message);
+}
+
+// src/lib/emotes.ts
+function setEmote(arg, emote) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  return doSetEmote(actor, emote);
+}
+async function doSetEmote(actor, emote) {
+  if (!isActorActive(actor)) await activateActor(actor);
+  theatre.setUserEmote(
+    game.user?.id,
+    `theatre-${actor.id}`,
+    "emote",
+    emote,
+    false
+  );
+}
+function clearEmote(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
+}
+function setTextFlyin(flyin, arg) {
+  if (!FLYIN_NAMES.includes(flyin)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDFLYIN", { flyin }));
+  if (arg === "narrator") {
+    theatre.theatreNarrator.setAttribute("textflyin", flyin);
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textflyin", flyin, false);
+  } else {
+    theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textflyin", flyin, false);
+  }
+}
+function getTextFlyin(arg) {
+  if (arg === "narrator") {
+    return theatre.theatreNarrator.getAttribute("textflyin") ?? FLYIN_NAMES[0];
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    return theatre.getInsertById(`theatre-${actor.id}`).textFlyin;
+  } else if (isNarratorBarActive()) {
+    return theatre.theatreNarrator.getAttribute("textflyin");
+  } else if (theatre.speakingAs) {
+    return theatre.getInsertById(theatre.speakingAs).textFlyin ?? FLYIN_NAMES[0];
+  } else {
+    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  }
+}
+
+// src/lib/log.ts
+var LOG_ICON = "\u{1F3AD}";
+var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
+var log = wrappedConsoleFunc(console.log);
+var warn = wrappedConsoleFunc(console.warn);
+var error = wrappedConsoleFunc(console.error);
+var info = wrappedConsoleFunc(console.info);
+function wrappedConsoleFunc(original) {
+  return function(...args) {
+    const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
+    const actualArgs = args;
+    if (shouldLog)
+      original(LOG_PREFIX, "|", ...actualArgs);
+  };
 }
 
 // src/lib/applications/IntroductionApplication.ts
@@ -1052,6 +1069,47 @@ async function introduceActor(actor, message, portraitWait = 0, musicWait = 0, s
   await Promise.all(promises);
 }
 
+// src/lib/standing.ts
+function getStandingAnimations() {
+  return [
+    "none",
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    ...Object.keys(Theatre.STANDING_ANIMS)
+  ];
+}
+function setTextStanding(standing, arg) {
+  if (!getStandingAnimations().includes(standing)) throw new Error(game.i18n?.format("THEATREAUTOMATION.ERRORS.INVALIDSTANDING", { standing }));
+  if (arg === "narrator") {
+    theatre.theatreNarrator.setAttribute("textstanding", standing);
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textstanding", standing, false);
+  } else if (theatre.speakingAs) {
+    theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textstanding", standing, false);
+  } else if (isNarratorBarActive()) {
+    theatre.theatreNarrator.setAttribute("textstanding", standing);
+  } else {
+    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  }
+}
+function getTextStanding(arg) {
+  if (arg === "narrator") {
+    return theatre.theatreNarrator.getAttribute("textstanding");
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    return theatre.getInsertById(`theatre-${actor.id}`).textStanding;
+  } else if (isNarratorBarActive()) {
+    return theatre.theatreNarrator.getAttribute("textstanding");
+  } else {
+    const actor = currentlySpeaking();
+    if (actor instanceof Actor) return theatre.getInsertById(`theatre-${actor.id}`).textStanding;
+    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  }
+}
+
 // src/lib/api.ts
 var api_default = {
   wait,
@@ -1072,20 +1130,23 @@ var api_default = {
   sendNarration,
   setTextFlyin,
   getTextFlyin,
-  FLYIN_NAMES
+  FLYIN_NAMES,
+  getTextStanding,
+  setTextStanding,
+  currentlySpeaking,
+  currentlyActive
 };
 
 // src/module.ts
-Hooks.once("init", async () => {
-  window.TheatreAutomation = api_default;
-  await loadTemplates([
-    `/modules/${"theatre-inserts-automation"}/templates/intro/application.hbs`
-  ]);
-  log(`Initialized`);
-});
-Hooks.once("ready", () => {
+Hooks.once("ready", async () => {
   if (game instanceof Game && !game.modules.get("theatre")?.active) {
     ui.notifications?.error(game.i18n?.format("THEATREAUTOMATION.ERRORS.THEATREINSERTSNOTFOUND", { MODULENAME: "Theatre Inserts Automation" }));
+  } else {
+    window.TheatreAutomation = api_default;
+    await loadTemplates([
+      `/modules/${"theatre-inserts-automation"}/templates/intro/application.hbs`
+    ]);
+    window.TheatreAutomation.STANDING_NAMES = getStandingAnimations();
   }
 });
 //# sourceMappingURL=module.js.map

@@ -1,5 +1,3 @@
-import { log } from "./log";
-
 /**
  * Waits a specified amount of time, then resolves.
  * @param {number} ms Time, in milliseconds, to wait.
@@ -17,10 +15,15 @@ export async function wait(ms: number): Promise<void> {
  * @param message 
  */
 export function sendChatMessage(alias: string, message: string) {
+  theatre.lastTyping = Date.now();
+  theatre.setUserTyping(game.user?.id, theatre.speakingAs);
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+  (<any>theatre)._sendTypingEvent();
+
   const chatMessage = createChatMessage(alias, message);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-  const actualMessage = ChatMessage.create(chatMessage as any);
-  actualMessage.then((...args: unknown[]) => { log("Message:", ...args) });
+  ChatMessage.create(chatMessage as any);
   // Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
 
