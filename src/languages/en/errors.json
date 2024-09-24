@@ -5,7 +5,9 @@
       "INVALIDACTOR": "Invalid actor provided.",
       "INVALIDPLAYLIST": "Invalid Playlist specified.",
       "INVALIDSOUND": "Invalid Sound specified.",
-      "INVALIDPARAMETERS": "Invalid parameters provided."
+      "INVALIDPARAMETERS": "Invalid parameters provided.",
+      "ACTORNOTSTAGED": "Actor not yet staged.",
+      "ACTORNOTACTIVE": "Actor insert is not activated."
     }
   }
 }
