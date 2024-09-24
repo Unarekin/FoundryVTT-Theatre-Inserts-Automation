@@ -30,7 +30,8 @@ export function sendMessage(arg: unknown, message: string): Promise<void> {
     .then(() => {
       log("Activated");
       if (!isActorSpeaking(actor)) setSpeakingAs(actor);
-      sendChatMessage(message);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      sendChatMessage((<any>actor).name, message);
     })
 }
 
@@ -75,3 +76,98 @@ export function isActorSpeaking(arg: unknown): boolean {
   return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
 }
 
+// export async function testActorHook(id: string, message: string) {
+//   const actor = coerceActor(id);
+//   if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+
+//   if (!isActorActive(actor)) await activateActor(actor);
+
+//   // const chatMessage = {
+//   //   content: message,
+//   //   style: 2,
+//   //   author: game.user?.id,
+//   //   _id: foundry.utils.randomID(),
+//   //   type: "base",
+//   //   system: {},
+//   //   timestamp: Date.now(),
+//   //   flavor: "",
+//   //   speaker: {
+//   //     scene: null,
+//   //     actor: null,
+//   //     token: null,
+//   //     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+//   //     alias: (<any>actor).name
+//   //   },
+//   //   whisper: [],
+//   //   blind: false,
+//   //   rolls: [],
+//   //   sound: null,
+//   //   emote: false,
+//   //   flags: {
+//   //     theatre: {
+//   //       theatreMessage: true
+//   //     }
+//   //   },
+//   //   _stats: {
+//   //     compendiumSource: null,
+//   //     duplicateSource: null,
+//   //     systemId: game.system?.id,
+//   //     systemVersion: game.system?.version,
+//   //     createdTime: Date.now(),
+//   //     modifiedTime: Date.now(),
+//   //     lastModifiedBy: game.user?.id
+//   //   }
+//   // };
+
+//   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+//   const chatMessage = createChatMessage((<any>actor).name, message);
+
+//   theatre.setUserTyping(game.user?.id, `theatre-${actor.id}`);
+//   Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
+// }
+
+
+// export function testNarrationHook(message: string) {
+
+//   // const chatMessage = {
+//   //   content: message,
+//   //   style: 2,
+//   //   author: game.user?.id,
+//   //   _id: foundry.utils.randomID(),
+//   //   type: "base",
+//   //   system: {},
+//   //   timestamp: Date.now(),
+//   //   flavor: "",
+//   //   speaker: {
+//   //     scene: null,
+//   //     actor: null,
+//   //     token: null,
+//   //     alias: "Narrator"
+//   //   },
+//   //   whisper: [],
+//   //   blind: false,
+//   //   rolls: [],
+//   //   sound: null,
+//   //   emote: false,
+//   //   flags: {
+//   //     theatre: {
+//   //       theatreMessage: true
+//   //     }
+//   //   },
+//   //   _stats: {
+//   //     compendiumSource: null,
+//   //     duplicateSource: null,
+//   //     coreVersion: game.release?.version,
+//   //     systemId: game.system?.id,
+//   //     systemVersion: game.system?.version,
+//   //     createdTime: Date.now(),
+//   //     modifiedTime: Date.now(),
+//   //     lastModifiedBy: game.user?.id
+//   //   }
+//   // }
+
+
+//   const chatMessage = createChatMessage("narrator", message);
+//   // log("Chat message:", chatMessage);
+//   Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
+// }

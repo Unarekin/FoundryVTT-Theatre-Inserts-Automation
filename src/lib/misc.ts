@@ -1,3 +1,5 @@
+import { log } from "./log";
+
 /**
  * Waits a specified amount of time, then resolves.
  * @param {number} ms Time, in milliseconds, to wait.
@@ -10,41 +12,57 @@ export async function wait(ms: number): Promise<void> {
 }
 
 /**
- * Handles actually sending a message via the chat box
- * @param {string} message Message to send
+ * 
+ * @param alias 
+ * @param message 
  */
-export function sendChatMessage(message: string) {
-  const chatBox: JQuery<HTMLTextAreaElement> = $("#chat-message");
-  const previousChatValue = chatBox.val() ?? ""
-  const previousChatFocus = chatBox.is(":selected");
-
-  theatre.setUserTyping(game.user?.id, theatre.speakingAs);
-  chatBox.val(message);
-  chatBox.trigger("focus");
-
-  chatBox.trigger(createEnterEvent("keydown"));
-  chatBox.trigger(createEnterEvent("keyup"));
-
-  chatBox.val(previousChatValue);
-  if (!previousChatFocus) chatBox.trigger("blur");
+export function sendChatMessage(alias: string, message: string) {
+  const chatMessage = createChatMessage(alias, message);
+  log("Sending:", chatMessage);
+  Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
 
 /**
- * Quick wrapper to create keydown and keyup events
- * @param {string} name 
- * @returns 
+ * Creates a {@link ChatMessage}-like object to be passed to the createChatMessage hook to spoof input from a user
+ * @param {string} alias Alias to set for the string.  Set to actor's name if an actor, "narrator" if narrator
+ * @param {string} message 
  */
-function createEnterEvent(name: string) {
-  return jQuery.Event(name, {
-    which: 13,
-    keyCode: 13,
-    originalEvent: new KeyboardEvent(name, {
-      code: "Enter",
-      key: "Enter",
-      charCode: 13,
-      keyCode: 13,
-      view: window,
-      bubbles: true
-    })
-  });
+export function createChatMessage(alias: string, message: string) {
+  return {
+    content: message,
+    style: 2,
+    author: game.user?.id,
+    _id: foundry.utils.randomID(),
+    type: "base",
+    system: {},
+    timestamp: Date.now(),
+    flavor: "",
+    speaker: {
+      scene: null,
+      actor: null,
+      token: null,
+      alias
+    },
+    whisper: [],
+    blind: false,
+    rolls: [],
+    sound: null,
+    emote: false,
+    flags: {
+      theatre: {
+        theatreMessage: true
+      }
+    },
+    _stats: {
+      compendiumSource: null,
+      duplicateSource: null,
+      coreVersion: game.release?.version,
+      systemId: game.system?.id,
+      systemVersion: game.system?.version,
+      createdTime: Date.now(),
+      modifiedTime: Date.now(),
+      lastModifiedBy: game.user?.id
+    }
+  }
+
 }

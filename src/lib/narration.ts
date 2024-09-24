@@ -31,5 +31,5 @@ export async function deactivateNarratorBar(): Promise<void> {
  */
 export async function sendNarration(message: string): Promise<void> {
   if (!isNarratorBarActive()) await activateNarratorBar();
-  sendChatMessage(message);
+  sendChatMessage("narrator", message);
 }

@@ -472,31 +472,48 @@ async function wait(ms) {
     setTimeout(resolve, ms);
   });
 }
-function sendChatMessage(message) {
-  const chatBox = $("#chat-message");
-  const previousChatValue = chatBox.val() ?? "";
-  const previousChatFocus = chatBox.is(":selected");
-  theatre.setUserTyping(game.user?.id, theatre.speakingAs);
-  chatBox.val(message);
-  chatBox.trigger("focus");
-  chatBox.trigger(createEnterEvent("keydown"));
-  chatBox.trigger(createEnterEvent("keyup"));
-  chatBox.val(previousChatValue);
-  if (!previousChatFocus) chatBox.trigger("blur");
+function sendChatMessage(alias, message) {
+  const chatMessage = createChatMessage(alias, message);
+  log("Sending:", chatMessage);
+  Hooks.callAll("createChatMessage", chatMessage, { modifiedTime: Date.now(), parent: null, render: true, renderSheet: false }, game.user?.id);
 }
-function createEnterEvent(name) {
-  return jQuery.Event(name, {
-    which: 13,
-    keyCode: 13,
-    originalEvent: new KeyboardEvent(name, {
-      code: "Enter",
-      key: "Enter",
-      charCode: 13,
-      keyCode: 13,
-      view: window,
-      bubbles: true
-    })
-  });
+function createChatMessage(alias, message) {
+  return {
+    content: message,
+    style: 2,
+    author: game.user?.id,
+    _id: foundry.utils.randomID(),
+    type: "base",
+    system: {},
+    timestamp: Date.now(),
+    flavor: "",
+    speaker: {
+      scene: null,
+      actor: null,
+      token: null,
+      alias
+    },
+    whisper: [],
+    blind: false,
+    rolls: [],
+    sound: null,
+    emote: false,
+    flags: {
+      theatre: {
+        theatreMessage: true
+      }
+    },
+    _stats: {
+      compendiumSource: null,
+      duplicateSource: null,
+      coreVersion: game.release?.version,
+      systemId: game.system?.id,
+      systemVersion: game.system?.version,
+      createdTime: Date.now(),
+      modifiedTime: Date.now(),
+      lastModifiedBy: game.user?.id
+    }
+  };
 }
 
 // src/lib/staging.ts
@@ -926,7 +943,7 @@ function sendMessage(arg, message) {
   return (isActorActive(actor) ? Promise.resolve() : activateActor(actor)).then(() => {
     log("Activated");
     if (!isActorSpeaking(actor)) setSpeakingAs(actor);
-    sendChatMessage(message);
+    sendChatMessage(actor.name, message);
   });
 }
 function setSpeakingAs(actor) {
@@ -999,7 +1016,7 @@ async function deactivateNarratorBar() {
 }
 async function sendNarration(message) {
   if (!isNarratorBarActive()) await activateNarratorBar();
-  sendChatMessage(message);
+  sendChatMessage("narrator", message);
 }
 
 // src/lib/api.ts
