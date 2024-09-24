@@ -94,8 +94,8 @@ export function setTextFlyin(flyin: Flyin, arg?: unknown): void {
     theatre.theatreNarrator.setAttribute("textflyin", flyin);
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
-    if (!isActorActive(actor)) throw new Error("THEATREAUTOMATION.ERRORS.ACTORNOTACTIVE");
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+    if (!isActorActive(actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
     theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textflyin", flyin, false);
   } else {
     theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textflyin", flyin, false);
@@ -131,7 +131,7 @@ export function getTextFlyin(arg?: unknown): Flyin {
     return (theatre.theatreNarrator.getAttribute("textflyin") ?? FLYIN_NAMES[0]) as Flyin;
   } else if (arg) {
     const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+    if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     return theatre.getInsertById(`theatre-${actor.id}`).textFlyin as Flyin;
   } else if (isNarratorBarActive()) {
@@ -140,6 +140,6 @@ export function getTextFlyin(arg?: unknown): Flyin {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     return (theatre.getInsertById(theatre.speakingAs).textFlyin ?? FLYIN_NAMES[0]) as Flyin;
   } else {
-    throw new Error("THEATREAUTOMATION.ERRORS.INVALIDACTOR");
+    throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
   }
 }

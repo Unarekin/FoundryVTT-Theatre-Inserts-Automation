@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { coerceActor } from "./coercion";
 import { TWEEN_WAIT_TIME } from "./constants";
-import { clearEmote } from "./emotes";
+// import { clearEmote } from "./emotes";
 import { wait } from "./misc";
 import { isActorStaged, stageActor } from "./staging";
 
@@ -68,7 +68,7 @@ export function deactivateActor(arg: unknown, unstage?: boolean): Promise<void> 
     });
   }
 
-  clearEmote(actor);
+  // clearEmote(actor);
   return wait(TWEEN_WAIT_TIME);
 }
 
@@ -96,4 +96,38 @@ export function isActorActive(arg: unknown): boolean {
   // They are not staged
   if (!navItem) return false;
   return navItem.classList.contains("theatre-control-nav-bar-item-active");
+}
+
+/**
+ * Returns the {@link Actor} that is currently speaking, if any.
+ * @returns {Actor | null} {@link Actor}
+ */
+export function currentlySpeaking(): Actor | null {
+  if (theatre.speakingAs) {
+    const [, id] = (<string>theatre.speakingAs).split("-");
+    const actor = coerceActor(id);
+    return actor ?? null;
+  } else {
+    return null;
+  }
+}
+
+/**
+ * Retrieves a list of {@link Actor}s whose inserts are active.
+ * @returns {Actor[]} {@link Actor}[]
+ */
+export function currentlyActive(): Actor[] {
+  const activeNavItems = $(".theatre-control-nav-bar img.theatre-control-nav-bar-item-active")
+    .map(function () {
+      return this.getAttribute("imgid");
+    })
+    .toArray();
+
+  return activeNavItems.map(elemId => {
+    const [, id] = elemId.split("-");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    return game.actors.get(id);
+  })
+    .filter(elem => !!elem) as Actor[];
+
 }
