@@ -442,6 +442,7 @@ function coerceSound(arg, playlist) {
 
 // src/lib/constants.ts
 var TWEEN_WAIT_TIME = 1500;
+var NARRATOR_WAIT_TIME = 500;
 
 // src/lib/emotes.ts
 function setEmote(arg, emote) {
@@ -988,11 +989,17 @@ async function introduceActor(actor, message, portraitWait = 0, musicWait = 0, s
 function isNarratorBarActive() {
   return $(".theatre-control-btn .theatre-icon-narrator").parent().hasClass("theatre-control-nav-bar-item-speakingas");
 }
-function activateNarratorBar() {
+async function activateNarratorBar() {
   theatre.toggleNarratorBar(true, false);
+  await wait(NARRATOR_WAIT_TIME);
 }
-function deactivateNarratorBar() {
+async function deactivateNarratorBar() {
   theatre.toggleNarratorBar(false, false);
+  await wait(NARRATOR_WAIT_TIME);
+}
+async function sendNarration(message) {
+  if (!isNarratorBarActive()) await activateNarratorBar();
+  sendChatMessage(message);
 }
 
 // src/lib/api.ts
@@ -1011,7 +1018,8 @@ var api_default = {
   introduceActor,
   isNarratorBarActive,
   activateNarratorBar,
-  deactivateNarratorBar
+  deactivateNarratorBar,
+  sendNarration
 };
 
 // src/module.ts
