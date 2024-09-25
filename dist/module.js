@@ -483,8 +483,8 @@ function createChatMessage(alias, message) {
 // src/lib/errors/LocalizedError.ts
 var LocalizedError = class extends Error {
   constructor(message, subs) {
-    if (message) super(game.i18n?.format(`THEATREAUTOMATION.ERRORS.${message}`));
-    super();
+    if (message) super(game.i18n?.format(`THEATREAUTOMATION.ERRORS.${message}`, subs));
+    else super();
   }
 };
 
@@ -509,17 +509,24 @@ var InvalidActorError = class extends LocalizedError {
   }
 };
 
+// src/lib/errors/InvalidFlyinError.ts
+var InvalidFlyinError = class extends LocalizedError {
+  constructor(flyin) {
+    super("INVALIDFLYIN", { flyin });
+  }
+};
+
+// src/lib/errors/InvalidFontError.ts
+var InvalidFontError = class extends LocalizedError {
+  constructor(font) {
+    super("INVALIDFONT", { font });
+  }
+};
+
 // src/lib/errors/InvalidStandingError.ts
 var InvalidStandingError = class extends LocalizedError {
   constructor(standing) {
     super("INVALIDSTANDING", { standing });
-  }
-};
-
-// src/lib/errors/InvalydFlyingError.ts
-var InvalidFlyinError = class extends LocalizedError {
-  constructor(flyin) {
-    super("INVALIDFLYIN", { flyin });
   }
 };
 
@@ -667,6 +674,52 @@ function getTextFlyin(arg) {
     return theatre.theatreNarrator.getAttribute("textflyin") ?? "";
   } else if (theatre.speakingAs) {
     return theatre.getInsertById(theatre.speakingAs).textFlyin ?? "";
+  } else {
+    throw new InvalidActorError();
+  }
+}
+
+// src/lib/fonts.ts
+function getFonts() {
+  return Object.values(game.settings?.settings.get("theatre.nameFont")?.choices ?? []);
+}
+function isValidFont(font) {
+  return getFonts().includes(font);
+}
+function getFont(arg) {
+  if (arg === "narrator") {
+    return theatre.theatreNarrator.getAttribute("textfont") ?? null;
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    return theatre.getInsertById(`theatre-${actor.id}`).textFont ?? null;
+  } else if (currentlySpeaking()) {
+    const actor = currentlySpeaking();
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    return theatre.getInsertById(`theatre-${actor.id}`).textFont ?? null;
+  } else if (currentlyActive().length) {
+    const active = currentlyActive();
+    if (active.length > 1) throw new InvalidActorError();
+    return theatre.getInsertById(`theatre-${active[0].id}`).textFont ?? null;
+  } else {
+    throw new InvalidActorError();
+  }
+}
+function setFont(font, arg) {
+  if (!isValidFont(font)) throw new InvalidFontError(font);
+  if (arg === "narrator") {
+    theatre.theatreNarrator.setAttribute("textfont", font);
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    if (!isActorActive(actor)) throw new ActorNotActiveError();
+    theatre.getInsertById(`theatre-${actor.id}`).textFont = font;
+  } else if (currentlySpeaking()) {
+    const actor = currentlySpeaking();
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    theatre.getInsertById(`theatre-${actor.id}`).textFont = font;
+  } else if (currentlyActive() && currentlyActive().length === 1) {
+    theatre.getInsertById(`theatre-${currentlyActive()[0].id}`).textFont = font;
   } else {
     throw new InvalidActorError();
   }
@@ -1183,7 +1236,11 @@ var api_default = {
   getTextStanding,
   setTextStanding,
   currentlySpeaking,
-  currentlyActive
+  currentlyActive,
+  getFonts,
+  isValidFont,
+  getFont,
+  setFont
 };
 
 // src/module.ts
