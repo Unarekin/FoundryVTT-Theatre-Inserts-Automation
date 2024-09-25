@@ -1,6 +1,9 @@
 import { currentlyActive, currentlySpeaking, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
-import { ActorNotActiveError, InvalidActorError, InvalidFontError } from "./errors";
+import { ActorNotActiveError, InvalidActorError, InvalidFontError, InvalidFontSizeError } from "./errors";
+import { log } from "./log";
+
+export type FontSize = 1 | 2 | 3;
 
 /**
  * Retrieves a list of fonts that Theatre Inserts knows about
@@ -134,40 +137,42 @@ export function setFont(font: string, arg?: unknown): void {
  * Retrieves the font size for the currently speaking / active actor if there is just one
  * @returns {number} Size, 1-3
  */
-export function getFontSize(): number
+export function getFontSize(): FontSize
 /**
  * Retrieves the font size for a given {@link Actor}'s insert.
  * @param {string} id {@link Actor}'s id
  * @returns {number} Size, 1-3
  */
-export function getFontSize(id: string): number
+export function getFontSize(id: string): FontSize
 /**
  * Retrieves the font size for a given {@link Actor}'s insert.
  * @param {string} name {@link Actor}'s name
  * @returns {number} Size, 1-3
  */
-export function getFontSize(name: string): number
+export function getFontSize(name: string): FontSize
 /**
  * Retrieves the font size for a given {@link Actor}'s insert.
  * @param {Actor} actor {@link Actor}
  * @returns {number} Size, 1-3
  */
-export function getFontSize(actor: Actor): number
+export function getFontSize(actor: Actor): FontSize
 /**
  * Retrieves the font size for a given {@link Actor}'s insert.
  * @param {Token} token {@link Token}
  * @returns {number} Size, 1-3
  */
-export function getFontSize(token: Token): number
+export function getFontSize(token: Token): FontSize
 /**
  * Retrieves the font size for the narrator.
  * @param {"narrator"} name
  * @returns {number} Size, 1-3
  */
-export function getFontSize(name: "narrator"): number
-export function getFontSize(arg?: unknown): number {
+export function getFontSize(name: "narrator"): FontSize
+export function getFontSize(arg?: unknown): FontSize {
   if (arg === "narrator") {
-    return parseInt(theatre.theatreNarrator.getAttribute("textsize") as string) || 1;
+    const size = parseInt(theatre.theatreNarrator.getAttribute("textsize") as string);
+    if (size > 0 && size < 4) return size as FontSize;
+    else throw new InvalidFontSizeError(size);
   } else if (arg) {
     const actor = coerceActor(arg);
     if (!(actor instanceof Actor)) throw new InvalidActorError();
@@ -181,5 +186,69 @@ export function getFontSize(arg?: unknown): number {
     if (!(actor instanceof Actor)) throw new InvalidActorError();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
     return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
+  }
+}
+
+/**
+ * Set the font size of the currently speaking/active actor if there is only one
+ * @param {FontSize} size Size, from 1-3
+ */
+export function setFontSize(size: FontSize): void
+/**
+ * Set the font size of a particular {@link Actor}'s insert.
+ * @param {FontSize} size Size, from 1-3
+ * @param {string} id ID of the {@link Actor}
+ */
+export function setFontSize(size: FontSize, id: string): void
+/**
+ * Set the font size of a particular {@link Actor}'s insert.
+ * @param {FontSize} size Size, from 1-3
+ * @param {string} name Name of the {@link Actor}
+ */
+export function setFontSize(size: FontSize, name: string): void
+/**
+ * Set the font size of a particular {@link Actor}'s insert.
+ * @param {FontSize} size Size, from 1-3
+ * @param {Actor} actor {@link Actor}
+ */
+export function setFontSize(size: FontSize, actor: Actor): void
+/**
+ * Set the font size of a particular {@link Actor}'s insert.
+ * @param {FontSize} size Size, from 1-3
+ * @param {Token} token {@link Token}
+ */
+export function setFontSize(size: FontSize, token: Token): void
+/**
+* Set the font size of a particular {@link Actor}'s insert.
+ * @param {FontSize} size Size, from 1-3
+ * @param {"narrator"} name
+ */
+export function setFontSize(size: FontSize, name: "narrator"): void
+export function setFontSize(size: FontSize, arg?: unknown): void {
+  if (size < 1 || size > 3) throw new InvalidFontSizeError(size);
+  if (arg === "narrator") {
+    theatre.theatreNarrator.setAttribute("textsize", size.toString());
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    log("Arg:", arg, actor);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    insert.textSize = size;
+  } else {
+    let actor: Actor | null = null;
+    const speaking = currentlySpeaking();
+    if (speaking instanceof Actor) actor = speaking;
+    const active = currentlyActive();
+    if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    insert.textSize = size;
   }
 }

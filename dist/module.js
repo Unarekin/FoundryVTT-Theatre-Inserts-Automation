@@ -523,6 +523,13 @@ var InvalidFontError = class extends LocalizedError {
   }
 };
 
+// src/lib/errors/InvalidFontSizeError.ts
+var InvalidFontSizeError = class extends LocalizedError {
+  constructor(size) {
+    super("INVALIDSIZE", { size });
+  }
+};
+
 // src/lib/errors/InvalidStandingError.ts
 var InvalidStandingError = class extends LocalizedError {
   constructor(standing) {
@@ -679,6 +686,22 @@ function getTextFlyin(arg) {
   }
 }
 
+// src/lib/log.ts
+var LOG_ICON = "\u{1F3AD}";
+var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
+var log = wrappedConsoleFunc(console.log);
+var warn = wrappedConsoleFunc(console.warn);
+var error = wrappedConsoleFunc(console.error);
+var info = wrappedConsoleFunc(console.info);
+function wrappedConsoleFunc(original) {
+  return function(...args) {
+    const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
+    const actualArgs = args;
+    if (shouldLog)
+      original(LOG_PREFIX, "|", ...actualArgs);
+  };
+}
+
 // src/lib/fonts.ts
 function getFonts() {
   return Object.values(game.settings?.settings.get("theatre.nameFont")?.choices ?? []);
@@ -726,7 +749,9 @@ function setFont(font, arg) {
 }
 function getFontSize(arg) {
   if (arg === "narrator") {
-    return parseInt(theatre.theatreNarrator.getAttribute("textsize")) || 1;
+    const size = parseInt(theatre.theatreNarrator.getAttribute("textsize"));
+    if (size > 0 && size < 4) return size;
+    else throw new InvalidFontSizeError(size);
   } else if (arg) {
     const actor = coerceActor(arg);
     if (!(actor instanceof Actor)) throw new InvalidActorError();
@@ -739,21 +764,28 @@ function getFontSize(arg) {
     return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
   }
 }
-
-// src/lib/log.ts
-var LOG_ICON = "\u{1F3AD}";
-var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
-var log = wrappedConsoleFunc(console.log);
-var warn = wrappedConsoleFunc(console.warn);
-var error = wrappedConsoleFunc(console.error);
-var info = wrappedConsoleFunc(console.info);
-function wrappedConsoleFunc(original) {
-  return function(...args) {
-    const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
-    const actualArgs = args;
-    if (shouldLog)
-      original(LOG_PREFIX, "|", ...actualArgs);
-  };
+function setFontSize(size, arg) {
+  if (size < 1 || size > 3) throw new InvalidFontSizeError(size);
+  if (arg === "narrator") {
+    theatre.theatreNarrator.setAttribute("textsize", size.toString());
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    log("Arg:", arg, actor);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    insert.textSize = size;
+  } else {
+    let actor = null;
+    const speaking = currentlySpeaking();
+    if (speaking instanceof Actor) actor = speaking;
+    const active = currentlyActive();
+    if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    insert.textSize = size;
+  }
 }
 
 // src/lib/applications/IntroductionApplication.ts
@@ -1256,7 +1288,8 @@ var api_default = {
   isValidFont,
   getFont,
   setFont,
-  getFontSize
+  getFontSize,
+  setFontSize
 };
 
 // src/module.ts
