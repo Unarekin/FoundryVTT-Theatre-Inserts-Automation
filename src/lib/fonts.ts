@@ -128,3 +128,58 @@ export function setFont(font: string, arg?: unknown): void {
     throw new InvalidActorError();
   }
 }
+
+
+/**
+ * Retrieves the font size for the currently speaking / active actor if there is just one
+ * @returns {number} Size, 1-3
+ */
+export function getFontSize(): number
+/**
+ * Retrieves the font size for a given {@link Actor}'s insert.
+ * @param {string} id {@link Actor}'s id
+ * @returns {number} Size, 1-3
+ */
+export function getFontSize(id: string): number
+/**
+ * Retrieves the font size for a given {@link Actor}'s insert.
+ * @param {string} name {@link Actor}'s name
+ * @returns {number} Size, 1-3
+ */
+export function getFontSize(name: string): number
+/**
+ * Retrieves the font size for a given {@link Actor}'s insert.
+ * @param {Actor} actor {@link Actor}
+ * @returns {number} Size, 1-3
+ */
+export function getFontSize(actor: Actor): number
+/**
+ * Retrieves the font size for a given {@link Actor}'s insert.
+ * @param {Token} token {@link Token}
+ * @returns {number} Size, 1-3
+ */
+export function getFontSize(token: Token): number
+/**
+ * Retrieves the font size for the narrator.
+ * @param {"narrator"} name
+ * @returns {number} Size, 1-3
+ */
+export function getFontSize(name: "narrator"): number
+export function getFontSize(arg?: unknown): number {
+  if (arg === "narrator") {
+    return parseInt(theatre.theatreNarrator.getAttribute("textsize") as string) || 1;
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+    return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
+  } else {
+    // Get currently speakingas/active
+    const current = currentlySpeaking();
+    const active = currentlyActive()[0];
+    const actor = current ? current : active ? active : null;
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+    return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
+  }
+}

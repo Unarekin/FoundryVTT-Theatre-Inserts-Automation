@@ -724,6 +724,21 @@ function setFont(font, arg) {
     throw new InvalidActorError();
   }
 }
+function getFontSize(arg) {
+  if (arg === "narrator") {
+    return parseInt(theatre.theatreNarrator.getAttribute("textsize")) || 1;
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
+  } else {
+    const current = currentlySpeaking();
+    const active = currentlyActive()[0];
+    const actor = current ? current : active ? active : null;
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
+  }
+}
 
 // src/lib/log.ts
 var LOG_ICON = "\u{1F3AD}";
@@ -1240,7 +1255,8 @@ var api_default = {
   getFonts,
   isValidFont,
   getFont,
-  setFont
+  setFont,
+  getFontSize
 };
 
 // src/module.ts
