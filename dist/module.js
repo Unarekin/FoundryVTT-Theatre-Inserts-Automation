@@ -479,6 +479,21 @@ function createChatMessage(alias, message) {
     }
   };
 }
+function isValidColor(color) {
+  if (!color || typeof color !== "string") return false;
+  if (color.substring(0, 1) === "#") color = color.substring(1);
+  switch (color.length) {
+    case 3:
+      return /^[0-9A-F]{3}$/i.test(color);
+    case 6:
+      return /^[0-9A-F]{6}$/i.test(color);
+    case 8:
+      return /^[0-9A-F]{8}$/i.test(color);
+    default:
+      return false;
+  }
+  return false;
+}
 
 // src/lib/errors/LocalizedError.ts
 var LocalizedError = class extends Error {
@@ -513,6 +528,13 @@ var InvalidActorError = class extends LocalizedError {
 var InvalidFlyinError = class extends LocalizedError {
   constructor(flyin) {
     super("INVALIDFLYIN", { flyin });
+  }
+};
+
+// src/lib/errors/InvalidFontColorError.ts
+var InvalidFontColorError = class extends LocalizedError {
+  constructor(color) {
+    super("INVALIDCOLOR", { color });
   }
 };
 
@@ -703,6 +725,9 @@ function wrappedConsoleFunc(original) {
 }
 
 // src/lib/fonts.ts
+var DEFAULT_FONT_NAME = getFonts()[0];
+var DEFAULT_FONT_SIZE = 2;
+var DEFAULT_FONT_COLOR = "#ffffff";
 function getFonts() {
   return Object.values(game.settings?.settings.get("theatre.nameFont")?.choices ?? []);
 }
@@ -710,6 +735,75 @@ function isValidFont(font) {
   return getFonts().includes(font);
 }
 function getFont(arg) {
+  if (arg === "narrator") {
+    return {
+      name: theatre.theatreNarrator.getAttribute("textfont") || DEFAULT_FONT_NAME,
+      color: theatre.theatreNarrator.getAttribute("textcolor") || DEFAULT_FONT_COLOR,
+      size: parseInt(theatre.theatreNarrator.getAttribute("textsize") ?? "") || DEFAULT_FONT_SIZE
+    };
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      name: insert.textFont || DEFAULT_FONT_NAME,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      color: insert.textColor || DEFAULT_FONT_COLOR,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+      size: parseInt(insert.textSize) || DEFAULT_FONT_SIZE
+    };
+  } else {
+    let actor = null;
+    const speaking = currentlySpeaking();
+    const active = currentlyActive();
+    if (speaking instanceof Actor) actor = speaking;
+    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      name: insert.textFont || DEFAULT_FONT_NAME,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      color: insert.textColor || DEFAULT_FONT_COLOR,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+      size: parseInt(insert.textSize) || DEFAULT_FONT_SIZE
+    };
+  }
+}
+function setFont(config, arg) {
+  if (config.name && !isValidFont(config.name)) throw new InvalidFontError(config.name);
+  if (config.size && !(config.size > 0 && config.size < 4)) throw new InvalidFontSizeError(config.size);
+  if (config.color && !isValidColor(config.color)) throw new InvalidFontColorError(config.color);
+  if (arg === "narrator") {
+    if (config.name) theatre.theatreNarrator.setAttribute("textfont", config.name);
+    if (config.size) theatre.theatreNarrator.setAttribute("textsize", config.size.toString());
+    if (config.color) theatre.theatreNarrator.setAttribute("textcolor", config.color);
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    if (config.name) insert.textFont = config.name;
+    if (config.color) insert.textColor = config.color;
+    if (config.size) insert.textSize = config.size;
+  } else {
+    let actor = null;
+    const speaking = currentlySpeaking();
+    const active = currentlyActive();
+    if (speaking instanceof Actor) actor = speaking;
+    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    if (config.name) insert.textFont = config.name;
+    if (config.color) insert.textColor = config.color;
+    if (config.size) insert.textSize = config.size;
+  }
+}
+function getFontName(arg) {
   if (arg === "narrator") {
     return theatre.theatreNarrator.getAttribute("textfont") ?? null;
   } else if (arg) {
@@ -728,7 +822,7 @@ function getFont(arg) {
     throw new InvalidActorError();
   }
 }
-function setFont(font, arg) {
+function setFontName(font, arg) {
   if (!isValidFont(font)) throw new InvalidFontError(font);
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textfont", font);
@@ -785,6 +879,49 @@ function setFontSize(size, arg) {
     const insert = theatre.getInsertById(`theatre-${actor.id}`);
     if (!insert) throw new ActorNotActiveError();
     insert.textSize = size;
+  }
+}
+function getFontColor(arg) {
+  if (arg === "narrator") {
+    return theatre.theatreNarrator.getAttribute("textcolor") ?? "#ffffff";
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    return insert.textColor ?? "#ffffff";
+  } else {
+    let actor = null;
+    const speaking = currentlySpeaking();
+    const active = currentlyActive();
+    if (speaking instanceof Actor) actor = speaking;
+    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    return insert.textColor ?? "#ffffff";
+  }
+}
+function setFontColor(color, arg) {
+  if (!isValidColor(color)) throw new InvalidFontColorError(color);
+  if (arg === "narrator") {
+    theatre.theatreNarrator.setAttribute("textcolor", color);
+  } else if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    insert.textColor = color;
+  } else {
+    let actor = null;
+    const speaking = currentlySpeaking();
+    const active = currentlyActive();
+    if (speaking instanceof Actor) actor = speaking;
+    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    if (!insert) throw new ActorNotActiveError();
+    insert.textColor = color;
   }
 }
 
@@ -1284,12 +1421,15 @@ var api_default = {
   setTextStanding,
   currentlySpeaking,
   currentlyActive,
-  getFonts,
   isValidFont,
-  getFont,
-  setFont,
+  getFontName,
+  setFontName,
   getFontSize,
-  setFontSize
+  setFontSize,
+  getFontColor,
+  setFontColor,
+  getFont,
+  setFont
 };
 
 // src/module.ts
@@ -1303,6 +1443,7 @@ Hooks.once("ready", async () => {
     ]);
     window.TheatreAutomation.STANDING_NAMES = getStandingAnimations();
     window.TheatreAutomation.FLYIN_NAMES = getFlyinAnimations();
+    window.TheatreAutomation.FONT_NAMES = getFonts();
   }
 });
 //# sourceMappingURL=module.js.map

@@ -1,7 +1,7 @@
 import { activateActor, currentlyActive, currentlySpeaking, deactivateActor, isActorActive } from "./activation";
 import { clearEmote, setEmote } from "./emotes";
 import { getTextFlyin, setTextFlyin } from "./flyins";
-import { getFont, getFonts, getFontSize, isValidFont, setFont, setFontSize } from './fonts';
+import { getFont, getFontSize, isValidFont, setFontName, getFontName, setFontSize, setFont, getFontColor, setFontColor } from './fonts';
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { wait } from "./misc";
@@ -37,10 +37,13 @@ export default {
   currentlySpeaking,
   currentlyActive,
 
-  getFonts,
   isValidFont,
-  getFont,
-  setFont,
+  getFontName,
+  setFontName,
   getFontSize,
-  setFontSize
+  setFontSize,
+  getFontColor,
+  setFontColor,
+  getFont,
+  setFont
 };
