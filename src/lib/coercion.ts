@@ -3,6 +3,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
+import { ActorInsert } from "./interfaces";
+import { getInserts } from "./misc";
+
 /**
  * Retrieves an {@link Actor}
  * @param {unknown} arg A string id or name, or an {@link Actor}
@@ -16,6 +19,20 @@ export function coerceActor(arg: unknown): Actor | undefined | null {
     if (actor) return actor;
     actor = game.actors?.getName(arg);
     if (actor) return actor;
+
+  }
+}
+
+/**
+ * Retrieves an {@link ActorInsert} by id, name, Actor, Token, or an actual {@link ActorInsert}
+ * @param {unknown} arg 
+ */
+export function coerceInsert(arg: unknown): ActorInsert | undefined {
+  if (arg instanceof Actor) return coerceInsert(arg.id);
+  if (arg instanceof Token && arg.actor instanceof Actor) return coerceInsert(arg.actor.id);
+  if ((arg as ActorInsert)?.imgId !== undefined) return arg as ActorInsert;
+  if (typeof arg === "string") {
+    return getInserts().find(insert => insert.imgId === `theatre-${arg}` || insert.name === arg);
   }
 }
 
@@ -49,15 +66,6 @@ export function coerceSound(arg: unknown, playlist: unknown): PlaylistSound | un
     sound = actualPlaylist.sounds.getName(arg);
     if (sound instanceof PlaylistSound) return sound;
   }
-}
-
-/**
- * Retrieves an id for an {@link Actor}, given the id, name, or {@link Actor}
- * @param {unknown} arg 
- */
-export function coerceActorId(arg: unknown): string | undefined | null {
-  const actor = coerceActor(arg);
-  if (actor instanceof Actor) return actor.id;
 }
 
 /**

@@ -1,16 +1,9 @@
-import { currentlyActive, currentlySpeaking, isActorActive } from "./activation";
-import { coerceActor } from "./coercion";
+import { currentlyActive, currentlySpeaking } from "./activation";
+import { coerceInsert } from "./coercion";
 import { ActorNotActiveError, InvalidActorError, InvalidFontColorError, InvalidFontError, InvalidFontSizeError } from "./errors";
-import { log } from "./log";
+import { FontSize, FontConfig } from "./interfaces";
 import { isValidColor } from "./misc";
 
-export type FontSize = 1 | 2 | 3;
-
-export interface FontConfig {
-  name: string;
-  size: FontSize;
-  color: string;
-}
 
 const DEFAULT_FONT_NAME = getFonts()[0];
 const DEFAULT_FONT_SIZE = 2;
@@ -74,20 +67,13 @@ export function getFont(arg?: unknown): FontConfig {
       size: (parseInt(theatre.theatreNarrator.getAttribute("textsize") ?? "") || DEFAULT_FONT_SIZE) as FontSize
     };
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
 
     return {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       name: insert.textFont || DEFAULT_FONT_NAME,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       color: insert.textColor || DEFAULT_FONT_COLOR,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      size: (parseInt(insert.textSize) || DEFAULT_FONT_SIZE) as FontSize
+      size: (parseInt(insert.textSize ?? "0") || DEFAULT_FONT_SIZE) as FontSize
     }
   } else {
     let actor: Actor | null = null;
@@ -155,19 +141,19 @@ export function setFont(config: Partial<FontConfig>, arg?: unknown): void {
     if (config.size) theatre.theatreNarrator.setAttribute("textsize", config.size.toString());
     if (config.color) theatre.theatreNarrator.setAttribute("textcolor", config.color);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    // const actor = coerceActor(arg);
+    // if (!(actor instanceof Actor)) throw new InvalidActorError();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
+    // // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    // const insert = theatre.getInsertById(`theatre-${actor.id}`);
+    // if (!insert) throw new ActorNotActiveError();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
     if (config.name) insert.textFont = config.name;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (config.color) insert.textColor = config.color;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (config.size) insert.textSize = config.size;
+    if (config.size) insert.textSize = config.size.toString() ?? "2";
   } else {
     let actor: Actor | null = null;
     const speaking = currentlySpeaking();
@@ -226,20 +212,19 @@ export function getFontName(arg?: unknown): string | null {
   if (arg === "narrator") {
     return (theatre.theatreNarrator.getAttribute("textfont") as string) ?? null;
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    return theatre.getInsertById(`theatre-${actor.id}`).textFont ?? null;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    return insert.textFont;
   } else if (currentlySpeaking()) {
-    const actor = currentlySpeaking();
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    return theatre.getInsertById(`theatre-${actor.id}`).textFont ?? null;
+    const insert = currentlySpeaking();
+    if (!insert) throw new InvalidActorError();
+
+    return insert.textFont ?? null;
   } else if (currentlyActive().length) {
     const active = currentlyActive();
     if (active.length > 1) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    return theatre.getInsertById(`theatre-${active[0].id}`).textFont ?? null;
+
+    return active[0]?.textFont ?? null;
 
   } else {
     throw new InvalidActorError();
@@ -286,19 +271,16 @@ export function setFontName(font: string, arg?: unknown): void {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textfont", font);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    if (!isActorActive(actor)) throw new ActorNotActiveError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    theatre.getInsertById(`theatre-${actor.id}`).textFont = font;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    insert.textFont = font;
   } else if (currentlySpeaking()) {
-    const actor = currentlySpeaking();
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    theatre.getInsertById(`theatre-${actor.id}`).textFont = font;
+    const instance = currentlySpeaking();
+    if (!instance) throw new InvalidActorError();
+
+    instance.textFont = font;
   } else if (currentlyActive() && currentlyActive().length === 1) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    theatre.getInsertById(`theatre-${currentlyActive()[0].id}`).textFont = font;
+    currentlyActive()[0].textFont = font;
   } else {
     throw new InvalidActorError();
   }
@@ -346,10 +328,9 @@ export function getFontSize(arg?: unknown): FontSize {
     if (size > 0 && size < 4) return size as FontSize;
     else throw new InvalidFontSizeError(size);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    return parseInt(insert.textSize ?? "1") as FontSize;
   } else {
     // Get currently speakingas/active
     const current = currentlySpeaking();
@@ -401,27 +382,15 @@ export function setFontSize(size: FontSize, arg?: unknown): void {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textsize", size.toString());
   } else if (arg) {
-    const actor = coerceActor(arg);
-    log("Arg:", arg, actor);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    insert.textSize = size;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    insert.textSize = size.toString();
   } else {
-    let actor: Actor | null = null;
     const speaking = currentlySpeaking();
-    if (speaking instanceof Actor) actor = speaking;
     const active = currentlyActive();
-    if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
-
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    insert.textSize = size;
+    if (speaking) speaking.textSize = size.toString();
+    else if (active.length === 1) active[0].textSize = size.toString();
+    throw new InvalidActorError();
   }
 }
 
@@ -458,27 +427,16 @@ export function getFontColor(arg?: unknown): string {
   if (arg === "narrator") {
     return theatre.theatreNarrator.getAttribute("textcolor") ?? "#ffffff";
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
     return insert.textColor ?? "#ffffff";
   } else {
-    let actor: Actor | null = null;
     const speaking = currentlySpeaking();
     const active = currentlyActive();
-    if (speaking instanceof Actor) actor = speaking;
-    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+    if (speaking) return speaking.textColor ?? "#ffffff";
+    else if (active.length === 1) return active[0].textColor ?? "#ffffff";
 
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-    return insert.textColor ?? "#ffffff";
+    throw new InvalidActorError();
   }
 }
 
@@ -522,28 +480,16 @@ export function setFontColor(color: string, arg?: unknown): void {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textcolor", color);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     insert.textColor = color;
   } else {
-    let actor: Actor | null = null;
     const speaking = currentlySpeaking();
     const active = currentlyActive();
 
-    if (speaking instanceof Actor) actor = speaking;
-    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
-
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    insert.textColor = color;
+    if (speaking) speaking.textColor = color;
+    else if (active.length === 1) active[0].textColor = color;
+    else throw new InvalidActorError();
   }
 }

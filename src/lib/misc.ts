@@ -1,3 +1,4 @@
+import { ActorInsert } from "./interfaces";
 
 /**
  * Waits a specified amount of time, then resolves.
@@ -88,4 +89,11 @@ export function isValidColor(color: string): boolean {
   }
 
   return false;
+}
+
+/**
+ * Retrieves a list of {@link ActorInsert}s currently defined
+ */
+export function getInserts(): ActorInsert[] {
+  return theatre.portraitDocks as ActorInsert[];
 }

@@ -8,6 +8,7 @@ import { wait } from "./misc";
 import { activateNarratorBar, deactivateNarratorBar, isNarratorBarActive, sendNarration } from "./narration";
 import { isActorStaged, stageActor, unstageActor } from "./staging";
 import { getTextStanding, setTextStanding } from "./standing";
+import { createSyntheticInsert } from "./synthetic";
 
 export default {
   wait,
@@ -45,5 +46,8 @@ export default {
   getFontColor,
   setFontColor,
   getFont,
-  setFont
+  setFont,
+
+
+  createSyntheticInsert
 };

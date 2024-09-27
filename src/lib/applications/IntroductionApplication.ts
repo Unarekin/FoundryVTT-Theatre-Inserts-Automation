@@ -1,6 +1,6 @@
 import { log } from "../log";
 import EventEmitter from 'events';
-import { ActorContext, EventMap, IntroductionApplicationData, IntroductionApplicationFormData, PlaylistContext } from "./interfaces";
+import { ActorContext, EventMap, IntroductionApplicationData, IntroductionApplicationFormData, PlaylistContext } from "../interfaces";
 import { DynamicSelect } from '../dynamicSelect.js';
 import { getActorContext, getPlaylistContext } from "./sharedFunctionality";
 import { MaybePromise, GetDataReturnType } from "@league-of-foundry-developers/foundry-vtt-types/src/types/utils.mjs";
@@ -116,7 +116,7 @@ export class IntroductionApplication extends FormApplication<FormApplicationOpti
   activateListeners(html: JQuery<HTMLElement>) {
     super.activateListeners(html);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
     new DynamicSelect("#actorSelect", {
       name: "actorSelect",
       onChange: (value: string, text: string, option: unknown) => {

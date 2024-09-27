@@ -1,10 +1,10 @@
 import { activateActor, isActorActive } from "./activation";
-import { coerceActor } from "./coercion";
-import { ActorNotActiveError, ActorNotStagedError, InvalidActorError } from "./errors";
+import { coerceInsert } from "./coercion";
+import { InvalidActorError } from "./errors";
 import { getTextFlyin, setTextFlyin } from "./flyins";
+import { ActorInsert } from "./interfaces";
 
 import { sendChatMessage } from "./misc";
-import { isActorStaged, stageActor } from "./staging";
 
 /**
  * Sends a message as an {@link Actor}
@@ -28,31 +28,28 @@ export function sendMessage(name: string, message: string, flyin?: string): Prom
  */
 export function sendMessage(actor: Actor, message: string, flyin?: string): Promise<void>
 export function sendMessage(arg: unknown, message: string, flyin: string = "typewriter"): Promise<void> {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (!isActorStaged(actor)) stageActor(actor);
-  return (isActorActive(actor) ? Promise.resolve() : activateActor(actor))
+  console.log("Messaging:", arg);
+  const insert = coerceInsert(arg);
+  if (!insert) throw new InvalidActorError();
+  return (isActorActive(insert) ? Promise.resolve() : activateActor(insert))
     .then(() => {
-      if (!isActorSpeaking(actor)) setSpeakingAs(actor);
+      if (!isActorSpeaking(insert)) setSpeakingAs(insert);
       const oldFlyin = getTextFlyin();
       setTextFlyin(flyin);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      sendChatMessage((<any>actor).name, message);
+      sendChatMessage(insert.name, message);
       setTextFlyin(oldFlyin);
-    })
+    });
+
 }
 
-function setSpeakingAs(actor: Actor): void {
-  if (!isActorStaged(actor)) throw new ActorNotStagedError();
-  if (!isActorActive) throw new ActorNotActiveError();
-
-
-  const navItem: HTMLElement = theatre.getNavItemById(`theatre-${actor.id}`) as HTMLElement;
+function setSpeakingAs(insert: ActorInsert): void {
+  if (!isActorActive(insert)) activateActor(insert);
+  const navItem: HTMLElement = theatre.getNavItemById(insert.imgId) as HTMLElement;
   if (!navItem.classList.contains("theatre-control-nav-bar-item-speakingas")) {
     theatre.handleNavItemMouseUp({
       currentTarget: navItem,
       button: 0
-    });
+    })
   }
 }
 
@@ -76,10 +73,16 @@ export function isActorSpeaking(actor: Actor): boolean
  * @param {Token} token {@link Token} associated with the {@link Actor}
  */
 export function isActorSpeaking(token: Token): boolean
+/**
+ * Returns whether or not an {@link Actor} is activated in our chatbox
+ * @param {ActorInsert} insert {@link ActorInsert}
+ */
+export function isActorSpeaking(insert: ActorInsert): boolean
 export function isActorSpeaking(arg: unknown): boolean {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  const navItem: HTMLElement = theatre.getNavItemById(`theatre-${actor.id}`) as HTMLElement;
+  const insert = coerceInsert(arg);
+  if (!insert) throw new InvalidActorError();
+  const navItem: HTMLElement = theatre.getNavItemById(insert.imgId) as HTMLElement;
+  if (!navItem) throw new InvalidActorError();
   return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
 }
 

@@ -1,3 +1,5 @@
+export type FontSize = 1 | 2 | 3;
+
 export interface IntroductionApplicationData {
   selectedActor?: Actor;
   selectedSound?: PlaylistSound;
@@ -41,4 +43,43 @@ export type EventMap = {
   'submit': [response: IntroductionApplicationData];
   'cancel': [];
   'close': [];
+}
+
+
+export interface FontConfig {
+  name: string;
+  size: FontSize;
+  color: string;
+}
+
+
+export interface ImageResource {
+  imgpath: string;
+  resname: string;
+}
+
+export type Orientation = "left" | "right";
+
+export interface ActorInsert {
+  dockContainer: PIXI.Container;
+  emote: string | null;
+  exitOrientation: Orientation;
+  imgId: string;
+  meta: unknown;
+  mirrored: boolean;
+  name: string;
+  nameOrientation: Orientation;
+  optAlign: string;
+  order: number;
+  portraitContainer: PIXI.Container;
+  portrait: PIXI.Sprite | null;
+  renderOrder: number;
+  textColor: string | null;
+  textFlyin: string | null;
+  textFont: string | null;
+  textSize: string | null;
+  textStanding: string | null;
+  tweens: unknown;
+  typingBubble: PIXI.Sprite | null;
+  label: PIXI.Text | null;
 }

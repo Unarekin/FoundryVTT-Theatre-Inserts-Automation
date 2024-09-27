@@ -393,41 +393,6 @@ var require_events = __commonJS({
   }
 });
 
-// src/lib/coercion.ts
-function coerceActor(arg) {
-  if (arg instanceof Actor) return arg;
-  if (arg instanceof Token) return arg.actor;
-  if (typeof arg === "string") {
-    let actor = game.actors?.get(arg);
-    if (actor) return actor;
-    actor = game.actors?.getName(arg);
-    if (actor) return actor;
-  }
-}
-function coercePlaylist(arg) {
-  if (arg instanceof Playlist) return arg;
-  if (typeof arg === "string") {
-    let playlist = game.playlists?.get(arg);
-    if (playlist) return playlist;
-    playlist = game.playlists?.getName(arg);
-    if (playlist) return playlist;
-  }
-}
-function coerceSound(arg, playlist) {
-  if (arg instanceof PlaylistSound) return arg;
-  const actualPlaylist = coercePlaylist(playlist);
-  if (actualPlaylist && typeof arg === "string") {
-    let sound = actualPlaylist.sounds.get(arg);
-    if (sound instanceof PlaylistSound) return sound;
-    sound = actualPlaylist.sounds.getName(arg);
-    if (sound instanceof PlaylistSound) return sound;
-  }
-}
-
-// src/lib/constants.ts
-var TWEEN_WAIT_TIME = 1500;
-var NARRATOR_WAIT_TIME = 500;
-
 // src/lib/misc.ts
 async function wait(ms) {
   return new Promise((resolve) => {
@@ -494,6 +459,52 @@ function isValidColor(color) {
   }
   return false;
 }
+function getInserts() {
+  return theatre.portraitDocks;
+}
+
+// src/lib/coercion.ts
+function coerceActor(arg) {
+  if (arg instanceof Actor) return arg;
+  if (arg instanceof Token) return arg.actor;
+  if (typeof arg === "string") {
+    let actor = game.actors?.get(arg);
+    if (actor) return actor;
+    actor = game.actors?.getName(arg);
+    if (actor) return actor;
+  }
+}
+function coerceInsert(arg) {
+  if (arg instanceof Actor) return coerceInsert(arg.id);
+  if (arg instanceof Token && arg.actor instanceof Actor) return coerceInsert(arg.actor.id);
+  if (arg?.imgId !== void 0) return arg;
+  if (typeof arg === "string") {
+    return getInserts().find((insert) => insert.imgId === `theatre-${arg}` || insert.name === arg);
+  }
+}
+function coercePlaylist(arg) {
+  if (arg instanceof Playlist) return arg;
+  if (typeof arg === "string") {
+    let playlist = game.playlists?.get(arg);
+    if (playlist) return playlist;
+    playlist = game.playlists?.getName(arg);
+    if (playlist) return playlist;
+  }
+}
+function coerceSound(arg, playlist) {
+  if (arg instanceof PlaylistSound) return arg;
+  const actualPlaylist = coercePlaylist(playlist);
+  if (actualPlaylist && typeof arg === "string") {
+    let sound = actualPlaylist.sounds.get(arg);
+    if (sound instanceof PlaylistSound) return sound;
+    sound = actualPlaylist.sounds.getName(arg);
+    if (sound instanceof PlaylistSound) return sound;
+  }
+}
+
+// src/lib/constants.ts
+var TWEEN_WAIT_TIME = 1500;
+var NARRATOR_WAIT_TIME = 500;
 
 // src/lib/errors/LocalizedError.ts
 var LocalizedError = class extends Error {
@@ -507,13 +518,6 @@ var LocalizedError = class extends Error {
 var ActorNotActiveError = class extends LocalizedError {
   constructor() {
     super("ACTORNOTACTIVE");
-  }
-};
-
-// src/lib/errors/ActorNotStagedError.ts
-var ActorNotStagedError = class extends LocalizedError {
-  constructor() {
-    super("ACTORNOTSTAGED");
   }
 };
 
@@ -585,55 +589,56 @@ function unstageActor(arg) {
 
 // src/lib/activation.ts
 function activateActor(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (!isActorStaged(actor)) stageActor(actor);
+  let insert = coerceInsert(arg);
+  if (!insert) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    stageActor(actor);
+    insert = coerceInsert(arg);
+  }
+  if (!insert) throw new InvalidActorError();
+  console.log("Activating:", insert);
+  const navItem = theatre.getNavItemById(insert.imgId);
   theatre.handleNavItemMouseUp({
-    currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
-    button: 2
+    currentTarget: navItem,
+    button: 0
   });
   return wait(TWEEN_WAIT_TIME);
 }
-function deactivateActor(arg, unstage) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  theatre.removeInsertById(`theatre-${actor.id}`, false);
-  if (unstage) {
-    theatre.handleNavItemMouseUp({
-      currentTarget: theatre.getNavItemById(`theatre-${actor.id}`),
-      button: 2,
-      ctrlKey: true
-    });
+function deactivateActor(arg) {
+  if (!isActorActive(arg)) return;
+  let insert = coerceInsert(arg);
+  if (!insert) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    insert = coerceInsert(actor);
   }
-  return wait(TWEEN_WAIT_TIME);
+  if (!insert) throw new InvalidActorError();
+  theatre.removeInsertById(insert.imgId, false);
 }
 function isActorActive(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
-  if (!navItem) return false;
-  return navItem.classList.contains("theatre-control-nav-bar-item-active");
+  const insert = coerceInsert(arg);
+  if (!insert) throw new InvalidActorError();
+  const navItem = theatre.getNavItemById(insert.imgId);
+  return navItem?.classList.contains("theatre-control-nav-bar-item-active");
 }
 function currentlySpeaking() {
   if (theatre.speakingAs) {
     const [, id] = theatre.speakingAs.split("-");
-    const actor = coerceActor(id);
-    return actor ?? null;
+    const insert = coerceInsert(id);
+    return insert ?? null;
   } else {
     return null;
   }
 }
 function currentlyActive() {
-  const activeNavItems = $(".theatre-control-nav-bar img.theatre-control-nav-bar-item-active").map(function() {
-    return this.getAttribute("imgid");
-  }).toArray();
-  return activeNavItems.map((elemId) => {
-    const [, id] = elemId.split("-");
-    return game.actors.get(id);
-  }).filter((elem) => !!elem);
+  return theatre.portraitDocks;
 }
 
 // src/lib/emotes.ts
+function getEmoteNames() {
+  return Object.values(Theatre.getDefaultEmotes()).map((val) => val.name);
+}
 function setEmote(arg, emote) {
   const actor = coerceActor(arg);
   if (!(actor instanceof Actor)) throw new InvalidActorError();
@@ -708,22 +713,6 @@ function getTextFlyin(arg) {
   }
 }
 
-// src/lib/log.ts
-var LOG_ICON = "\u{1F3AD}";
-var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
-var log = wrappedConsoleFunc(console.log);
-var warn = wrappedConsoleFunc(console.warn);
-var error = wrappedConsoleFunc(console.error);
-var info = wrappedConsoleFunc(console.info);
-function wrappedConsoleFunc(original) {
-  return function(...args) {
-    const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
-    const actualArgs = args;
-    if (shouldLog)
-      original(LOG_PREFIX, "|", ...actualArgs);
-  };
-}
-
 // src/lib/fonts.ts
 var DEFAULT_FONT_NAME = getFonts()[0];
 var DEFAULT_FONT_SIZE = 2;
@@ -742,17 +731,12 @@ function getFont(arg) {
       size: parseInt(theatre.theatreNarrator.getAttribute("textsize") ?? "") || DEFAULT_FONT_SIZE
     };
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
     return {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       name: insert.textFont || DEFAULT_FONT_NAME,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       color: insert.textColor || DEFAULT_FONT_COLOR,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      size: parseInt(insert.textSize) || DEFAULT_FONT_SIZE
+      size: parseInt(insert.textSize ?? "0") || DEFAULT_FONT_SIZE
     };
   } else {
     let actor = null;
@@ -782,13 +766,11 @@ function setFont(config, arg) {
     if (config.size) theatre.theatreNarrator.setAttribute("textsize", config.size.toString());
     if (config.color) theatre.theatreNarrator.setAttribute("textcolor", config.color);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
     if (config.name) insert.textFont = config.name;
     if (config.color) insert.textColor = config.color;
-    if (config.size) insert.textSize = config.size;
+    if (config.size) insert.textSize = config.size.toString() ?? "2";
   } else {
     let actor = null;
     const speaking = currentlySpeaking();
@@ -807,17 +789,17 @@ function getFontName(arg) {
   if (arg === "narrator") {
     return theatre.theatreNarrator.getAttribute("textfont") ?? null;
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    return theatre.getInsertById(`theatre-${actor.id}`).textFont ?? null;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    return insert.textFont;
   } else if (currentlySpeaking()) {
-    const actor = currentlySpeaking();
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    return theatre.getInsertById(`theatre-${actor.id}`).textFont ?? null;
+    const insert = currentlySpeaking();
+    if (!insert) throw new InvalidActorError();
+    return insert.textFont ?? null;
   } else if (currentlyActive().length) {
     const active = currentlyActive();
     if (active.length > 1) throw new InvalidActorError();
-    return theatre.getInsertById(`theatre-${active[0].id}`).textFont ?? null;
+    return active[0]?.textFont ?? null;
   } else {
     throw new InvalidActorError();
   }
@@ -827,16 +809,15 @@ function setFontName(font, arg) {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textfont", font);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    if (!isActorActive(actor)) throw new ActorNotActiveError();
-    theatre.getInsertById(`theatre-${actor.id}`).textFont = font;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    insert.textFont = font;
   } else if (currentlySpeaking()) {
-    const actor = currentlySpeaking();
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    theatre.getInsertById(`theatre-${actor.id}`).textFont = font;
+    const instance = currentlySpeaking();
+    if (!instance) throw new InvalidActorError();
+    instance.textFont = font;
   } else if (currentlyActive() && currentlyActive().length === 1) {
-    theatre.getInsertById(`theatre-${currentlyActive()[0].id}`).textFont = font;
+    currentlyActive()[0].textFont = font;
   } else {
     throw new InvalidActorError();
   }
@@ -847,9 +828,9 @@ function getFontSize(arg) {
     if (size > 0 && size < 4) return size;
     else throw new InvalidFontSizeError(size);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    return theatre.getInsertById(`theatre-${actor.id}`)?.textSize || 1;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    return parseInt(insert.textSize ?? "1");
   } else {
     const current = currentlySpeaking();
     const active = currentlyActive()[0];
@@ -863,43 +844,30 @@ function setFontSize(size, arg) {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textsize", size.toString());
   } else if (arg) {
-    const actor = coerceActor(arg);
-    log("Arg:", arg, actor);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    insert.textSize = size;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    insert.textSize = size.toString();
   } else {
-    let actor = null;
     const speaking = currentlySpeaking();
-    if (speaking instanceof Actor) actor = speaking;
     const active = currentlyActive();
-    if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    insert.textSize = size;
+    if (speaking) speaking.textSize = size.toString();
+    else if (active.length === 1) active[0].textSize = size.toString();
+    throw new InvalidActorError();
   }
 }
 function getFontColor(arg) {
   if (arg === "narrator") {
     return theatre.theatreNarrator.getAttribute("textcolor") ?? "#ffffff";
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
     return insert.textColor ?? "#ffffff";
   } else {
-    let actor = null;
     const speaking = currentlySpeaking();
     const active = currentlyActive();
-    if (speaking instanceof Actor) actor = speaking;
-    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    return insert.textColor ?? "#ffffff";
+    if (speaking) return speaking.textColor ?? "#ffffff";
+    else if (active.length === 1) return active[0].textColor ?? "#ffffff";
+    throw new InvalidActorError();
   }
 }
 function setFontColor(color, arg) {
@@ -907,22 +875,32 @@ function setFontColor(color, arg) {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textcolor", color);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
     insert.textColor = color;
   } else {
-    let actor = null;
     const speaking = currentlySpeaking();
     const active = currentlyActive();
-    if (speaking instanceof Actor) actor = speaking;
-    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    const insert = theatre.getInsertById(`theatre-${actor.id}`);
-    if (!insert) throw new ActorNotActiveError();
-    insert.textColor = color;
+    if (speaking) speaking.textColor = color;
+    else if (active.length === 1) active[0].textColor = color;
+    else throw new InvalidActorError();
   }
+}
+
+// src/lib/log.ts
+var LOG_ICON = "\u{1F3AD}";
+var LOG_PREFIX = `${LOG_ICON} ${"Theatre Inserts Automation"}`;
+var log = wrappedConsoleFunc(console.log);
+var warn = wrappedConsoleFunc(console.warn);
+var error = wrappedConsoleFunc(console.error);
+var info = wrappedConsoleFunc(console.info);
+function wrappedConsoleFunc(original) {
+  return function(...args) {
+    const shouldLog = true ? true : typeof args[0] === "boolean" ? args[0] : false;
+    const actualArgs = args;
+    if (shouldLog)
+      original(LOG_PREFIX, "|", ...actualArgs);
+  };
 }
 
 // src/lib/applications/IntroductionApplication.ts
@@ -1286,21 +1264,20 @@ var IntroductionApplication = class extends FormApplication {
 
 // src/lib/messaging.ts
 function sendMessage(arg, message, flyin = "typewriter") {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (!isActorStaged(actor)) stageActor(actor);
-  return (isActorActive(actor) ? Promise.resolve() : activateActor(actor)).then(() => {
-    if (!isActorSpeaking(actor)) setSpeakingAs(actor);
+  console.log("Messaging:", arg);
+  const insert = coerceInsert(arg);
+  if (!insert) throw new InvalidActorError();
+  return (isActorActive(insert) ? Promise.resolve() : activateActor(insert)).then(() => {
+    if (!isActorSpeaking(insert)) setSpeakingAs(insert);
     const oldFlyin = getTextFlyin();
     setTextFlyin(flyin);
-    sendChatMessage(actor.name, message);
+    sendChatMessage(insert.name, message);
     setTextFlyin(oldFlyin);
   });
 }
-function setSpeakingAs(actor) {
-  if (!isActorStaged(actor)) throw new ActorNotStagedError();
-  if (!isActorActive) throw new ActorNotActiveError();
-  const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
+function setSpeakingAs(insert) {
+  if (!isActorActive(insert)) activateActor(insert);
+  const navItem = theatre.getNavItemById(insert.imgId);
   if (!navItem.classList.contains("theatre-control-nav-bar-item-speakingas")) {
     theatre.handleNavItemMouseUp({
       currentTarget: navItem,
@@ -1309,9 +1286,10 @@ function setSpeakingAs(actor) {
   }
 }
 function isActorSpeaking(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  const navItem = theatre.getNavItemById(`theatre-${actor.id}`);
+  const insert = coerceInsert(arg);
+  if (!insert) throw new InvalidActorError();
+  const navItem = theatre.getNavItemById(insert.imgId);
+  if (!navItem) throw new InvalidActorError();
   return navItem.classList.contains("theatre-control-nav-bar-item-speakingas");
 }
 
@@ -1369,10 +1347,9 @@ function setTextStanding(standing, arg) {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    if (!isActorActive(actor)) throw new ActorNotActiveError();
-    theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textstanding", standing, false);
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    theatre.setUserEmote(game.user?.id, insert.imgId, "textstanding", standing, false);
   } else if (theatre.speakingAs) {
     theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textstanding", standing, false);
   } else if (isNarratorBarActive()) {
@@ -1385,16 +1362,89 @@ function getTextStanding(arg) {
   if (arg === "narrator") {
     return theatre.theatreNarrator.getAttribute("textstanding");
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    return theatre.getInsertById(`theatre-${actor.id}`).textStanding;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    return insert.textStanding ?? "";
   } else if (isNarratorBarActive()) {
     return theatre.theatreNarrator.getAttribute("textstanding");
   } else {
-    const actor = currentlySpeaking();
-    if (actor instanceof Actor) return theatre.getInsertById(`theatre-${actor.id}`).textStanding;
-    throw new InvalidActorError();
+    const speaking = currentlySpeaking();
+    const active = currentlyActive();
+    if (speaking) return speaking.textStanding ?? "";
+    else if (active.length === 1) return active[0].textStanding ?? "";
+    else throw new InvalidActorError();
   }
+}
+
+// src/lib/synthetic.ts
+var SYNTHETIC_ACTORS = {};
+function getSyntheticActor(id) {
+  return SYNTHETIC_ACTORS[id];
+}
+async function createSyntheticInsert(name, image, isLeft = true) {
+  const id = foundry.utils.randomID();
+  const portraitContainer = new PIXI.Container();
+  const dockContainer = new PIXI.Container();
+  dockContainer.addChild(portraitContainer);
+  theatre.pixiCTX?.stage?.addChild(dockContainer);
+  const insert = {
+    imgId: `theatre-${id}`,
+    dockContainer,
+    portraitContainer,
+    name,
+    emote: null,
+    textFlyin: null,
+    textStanding: null,
+    textFont: null,
+    textSize: null,
+    textColor: null,
+    portrait: null,
+    label: null,
+    typingBubble: null,
+    exitOrientation: isLeft ? "left" : "right",
+    nameOrientation: "left",
+    optAlign: "top",
+    mirrored: false,
+    tweens: {},
+    order: 0,
+    renderOrder: 0,
+    meta: {}
+  };
+  theatre.portraitDocks.push(insert);
+  const navItem = document.createElement("img");
+  navItem.classList.add("theatre-control-nav-bar-item");
+  navItem.setAttribute("imgid", `theatre-${id}`);
+  navItem.setAttribute("src", image);
+  navItem.setAttribute("title", name);
+  navItem.setAttribute("name", name);
+  navItem.setAttribute("optalign", isLeft ? "left" : "right");
+  navItem.style.display = "none";
+  document.querySelector(".theatre-control-nav-bar")?.appendChild(navItem);
+  const imgSrcs = [
+    {
+      imgpath: "modules/theatre/assets/graphics/typing.png",
+      resname: "modules/theatre/assets/graphics/typing.png"
+    },
+    {
+      imgpath: image,
+      resname: image
+    },
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    ...Theatre.getActorRiggingResources(id).map(({ path }) => ({ imgpath: path, resname: path }))
+  ];
+  const resources = await theatre._addSpritesToPixi(imgSrcs);
+  const portWidth = resources[image].width;
+  const initX = isLeft ? -1 * portWidth : theatre.theatreDock.offsetWidth + portWidth;
+  dockContainer.x = initX;
+  await theatre._setupPortraitContainer(`theatre-${id}`, isLeft ? "left" : "right", image, resources, false);
+  theatre.stage[insert.imgId] = { actor: null, navElement: navItem };
+  const actor = game.actors.createDocument({ name, type: Object.keys(game.system?.documentTypes.Actor ?? {})[0] });
+  SYNTHETIC_ACTORS[id] = {
+    ...actor,
+    id,
+    _id: id
+  };
+  return insert;
 }
 
 // src/lib/api.ts
@@ -1429,7 +1479,8 @@ var api_default = {
   getFontColor,
   setFontColor,
   getFont,
-  setFont
+  setFont,
+  createSyntheticInsert
 };
 
 // src/module.ts
@@ -1444,6 +1495,14 @@ Hooks.once("ready", async () => {
     window.TheatreAutomation.STANDING_NAMES = getStandingAnimations();
     window.TheatreAutomation.FLYIN_NAMES = getFlyinAnimations();
     window.TheatreAutomation.FONT_NAMES = getFonts();
+    window.TheatreAutomation.EMOTE_NAMES = getEmoteNames();
+    libWrapper.register("theatre-inserts-automation", "Actors.prototype.get", function(wrapped, ...args) {
+      const synthetic = getSyntheticActor(args[0]);
+      if (synthetic) {
+        console.log("Synthetic actor:", synthetic);
+        return synthetic;
+      } else return wrapped(...args);
+    });
   }
 });
 //# sourceMappingURL=module.js.map

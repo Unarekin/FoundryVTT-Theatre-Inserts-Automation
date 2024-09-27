@@ -1,6 +1,6 @@
-import { currentlySpeaking, isActorActive } from "./activation";
-import { coerceActor } from "./coercion";
-import { ActorNotActiveError, InvalidStandingError, InvalidActorError } from "./errors";
+import { currentlyActive, currentlySpeaking } from "./activation";
+import { coerceInsert } from "./coercion";
+import { InvalidStandingError, InvalidActorError } from "./errors";
 import { isNarratorBarActive } from "./narration";
 
 /**
@@ -64,10 +64,9 @@ export function setTextStanding(standing: string, arg?: unknown): void {
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textstanding", standing);
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    if (!isActorActive(actor)) throw new ActorNotActiveError();
-    theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "textstanding", standing, false);
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    theatre.setUserEmote(game.user?.id, insert.imgId, "textstanding", standing, false);
   } else if (theatre.speakingAs) {
     // Use current
     theatre.setUserEmote(game.user?.id, theatre.speakingAs, "textstanding", standing, false);
@@ -111,16 +110,16 @@ export function getTextStanding(arg?: unknown): string {
   if (arg === "narrator") {
     return theatre.theatreNarrator.getAttribute("textstanding") as string;
   } else if (arg) {
-    const actor = coerceActor(arg);
-    if (!(actor instanceof Actor)) throw new InvalidActorError();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    return theatre.getInsertById(`theatre-${actor.id}`).textStanding as string;
+    const insert = coerceInsert(arg);
+    if (!insert) throw new InvalidActorError();
+    return insert.textStanding ?? "";
   } else if (isNarratorBarActive()) {
     return theatre.theatreNarrator.getAttribute("textstanding") as string;
   } else {
-    const actor = currentlySpeaking();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (actor instanceof Actor) return theatre.getInsertById(`theatre-${actor.id}`).textStanding as string;
-    throw new InvalidActorError();
+    const speaking = currentlySpeaking();
+    const active = currentlyActive();
+    if (speaking) return speaking.textStanding ?? "";
+    else if (active.length === 1) return active[0].textStanding ?? "";
+    else throw new InvalidActorError();
   }
 }
