@@ -20,6 +20,16 @@ The module contains a few sample macros for interacting with the module's provid
 
 The module is developed and tested against FoundryVTT v12, but doesn't do anything terribly ambitious in regards to interacting with Foundry, so should maintain backwards compatibility with v11.
 
+# Installation
+1. In Foundry, open the 'Add-on Modules' tab
+2. Click 'Install Module'
+3. In the 'Manifest URL' field, enter the following:
+```
+https://github.com/Unarekin/FoundryVTT-Theatre-Inserts-Automation/releases/latest/download/module.json
+```
+5. Click 'Install'
+6. Ensure the module is enabled in your game world with the 'Manage Modules' button
+
 # Example Usage
 
 ### Sending simple messages
