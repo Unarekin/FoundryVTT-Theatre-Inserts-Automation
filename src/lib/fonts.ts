@@ -35,7 +35,7 @@ export function getFonts(): string[] {
  * @returns {boolean}
  */
 export function isValidFont(font: string): boolean {
-  if (isValidURL(font)) return true;
+  // if (isValidURL(font)) return true;
   return getFonts().includes(font);
 }
 
