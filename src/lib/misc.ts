@@ -86,6 +86,19 @@ export function isValidColor(color: string): boolean {
     case 8: return /^[0-9A-F]{8}$/i.test(color);
     default: return false;
   }
-
-  return false;
 }
+
+/**
+ * 
+ * @param url 
+ * @returns 
+ */
+export function isValidURL(url: string): boolean {
+  try {
+    return Boolean(new URL(url, location.origin));
+  } catch (err: unknown) {
+    if (!(err instanceof TypeError)) throw err;
+    return false;
+  }
+}
+

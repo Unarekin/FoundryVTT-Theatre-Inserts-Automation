@@ -2,7 +2,7 @@ import { currentlyActive, currentlySpeaking, isActorActive } from "./activation"
 import { coerceActor } from "./coercion";
 import { ActorNotActiveError, InvalidActorError, InvalidFontColorError, InvalidFontError, InvalidFontSizeError } from "./errors";
 import { log } from "./log";
-import { isValidColor } from "./misc";
+import { isValidColor, isValidURL } from "./misc";
 
 export type FontSize = 1 | 2 | 3;
 
@@ -20,7 +20,13 @@ const DEFAULT_FONT_COLOR = "#ffffff";
  * Retrieves a list of fonts that Theatre Inserts knows about
  */
 export function getFonts(): string[] {
-  return Object.values(game.settings?.settings.get("theatre.nameFont")?.choices ?? []);
+
+  // // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+  // return (<any>document.fonts.entries()).toArray().reduce((prev: string | any[], curr: { family: any; }[]) => prev.includes(curr[0].family) ? prev : [...prev, curr[0].family], []) as string[];
+  return [
+    ...Object.values(game.settings?.settings.get("theatre.nameFont")?.choices ?? []),
+    ...FontConfig.getAvailableFonts()
+  ];
 }
 
 /**
@@ -29,7 +35,26 @@ export function getFonts(): string[] {
  * @returns {boolean}
  */
 export function isValidFont(font: string): boolean {
+  // if (isValidURL(font)) return true;
   return getFonts().includes(font);
+}
+
+/**
+ * Loads a remote font for use.
+ * @param {string} name 
+ * @param {string} url 
+ * @returns 
+ */
+export async function loadFont(name: string, url: string): Promise<boolean> {
+  if (!isValidURL(url)) throw new InvalidFontError(url);
+  return FontConfig.loadFont(name, {
+    editor: false,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    fonts: [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { urls: [url] } as any
+    ]
+  })
 }
 
 /**

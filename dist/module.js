@@ -492,7 +492,14 @@ function isValidColor(color) {
     default:
       return false;
   }
-  return false;
+}
+function isValidURL(url) {
+  try {
+    return Boolean(new URL(url, location.origin));
+  } catch (err) {
+    if (!(err instanceof TypeError)) throw err;
+    return false;
+  }
 }
 
 // src/lib/errors/LocalizedError.ts
@@ -729,10 +736,24 @@ var DEFAULT_FONT_NAME = getFonts()[0];
 var DEFAULT_FONT_SIZE = 2;
 var DEFAULT_FONT_COLOR = "#ffffff";
 function getFonts() {
-  return Object.values(game.settings?.settings.get("theatre.nameFont")?.choices ?? []);
+  return [
+    ...Object.values(game.settings?.settings.get("theatre.nameFont")?.choices ?? []),
+    ...FontConfig.getAvailableFonts()
+  ];
 }
 function isValidFont(font) {
   return getFonts().includes(font);
+}
+async function loadFont(name, url) {
+  if (!isValidURL(url)) throw new InvalidFontError(url);
+  return FontConfig.loadFont(name, {
+    editor: false,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    fonts: [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { urls: [url] }
+    ]
+  });
 }
 function getFont(arg) {
   if (arg === "narrator") {
@@ -1429,7 +1450,8 @@ var api_default = {
   getFontColor,
   setFontColor,
   getFont,
-  setFont
+  setFont,
+  loadFont
 };
 
 // src/module.ts
