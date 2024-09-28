@@ -742,7 +742,6 @@ function getFonts() {
   ];
 }
 function isValidFont(font) {
-  if (isValidURL(font)) return true;
   return getFonts().includes(font);
 }
 async function loadFont(name, url) {
