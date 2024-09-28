@@ -1,5 +1,6 @@
 import { activateActor, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
+import { InvalidActorError } from "./errors";
 
 /**
  * Sets an emote on an {@link Actor}'s message
@@ -21,7 +22,7 @@ export function setEmote(name: string, emote: string): Promise<void>
 export function setEmote(actor: Actor, emote: string): Promise<void>
 export function setEmote(arg: unknown, emote: string): Promise<void> {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   return doSetEmote(actor, emote);
 }
 
@@ -45,10 +46,10 @@ export function clearEmote(id: string): void
  * Clears an emote from an {@link Actor}'s insert
  * @param {string} name Name of the {@link Actor}
  */
-export function clearEmote(name): void
+export function clearEmote(name: string): void
 export function clearEmote(arg: unknown): void {
   const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
   theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
 }
 

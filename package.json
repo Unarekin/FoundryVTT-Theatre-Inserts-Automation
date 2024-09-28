@@ -1,7 +1,7 @@
 {
   "name": "theatre-inserts-automation",
-  "version": "1.0.0",
-  "description": "![](https://img.shields.io/badge/Foundry-v10-informational) <!--- Downloads @ Latest Badge --> <!--- replace <user>/<repo> with your username/repository --> <!--- ![Latest Release Download Count](https://img.shields.io/github/downloads/<user>/<repo>/latest/module.zip) -->",
+  "version": "1.0.1",
+  "description": "A small collection of example macros for interacting with the Theatre Inserts module for Foundry VTT.",
   "main": "dist/module.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

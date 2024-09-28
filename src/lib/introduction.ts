@@ -2,6 +2,7 @@ import { activateActor, deactivateActor } from "./activation";
 import { IntroductionApplicationData } from "./applications/interfaces";
 import { IntroductionApplication } from "./applications/IntroductionApplication";
 import { coerceActor } from "./coercion";
+import { InvalidActorError } from "./errors";
 import { sendMessage } from "./messaging";
 import { wait } from "./misc";
 import { playSound } from "./sounds";
@@ -15,7 +16,7 @@ import { playSound } from "./sounds";
 export async function getActorIntroData(selectedActor: unknown): Promise<IntroductionApplicationData | undefined> {
   return new Promise((resolve, reject) => {
     const actor = coerceActor(selectedActor);
-    if (selectedActor !== undefined && !(actor instanceof Actor)) reject(new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR")));
+    if (selectedActor !== undefined && !(actor instanceof Actor)) reject(new InvalidActorError());
     new IntroductionApplication({
       ...(actor ? { selectedActor: actor } : {})
     }).once("submit", resolve)
@@ -36,7 +37,7 @@ export async function getActorIntroData(selectedActor: unknown): Promise<Introdu
  */
 export async function introduceActor(actor: unknown, message: string, portraitWait: number = 0, musicWait: number = 0, sound: PlaylistSound, closeWait: number = 0) {
   const actualActor = coerceActor(actor);
-  if (!(actualActor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR"));
+  if (!(actualActor instanceof Actor)) throw new InvalidActorError();
 
   const promises: Promise<void>[] = [];
   if (sound instanceof PlaylistSound)

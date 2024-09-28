@@ -1,4 +1,5 @@
 import { coerceActor, coercePlaylist, coerceSound } from "./coercion";
+import { InvalidActorError, InvalidSoundError } from "./errors";
 
 /**
  * Plays a given {@link PlaylistSound}
@@ -53,7 +54,7 @@ export function crossFadeSounds(currentSound: PlaylistSound, newSound: PlaylistS
  * @returns {Promise<void>} A Promise<void> that resolves when the fade is complete.
  */
 function fadeSoundFrom(sound: PlaylistSound, duration: number, startVolume: number = 0, endVolume: number = 1): Promise<void> {
-  if (!(sound?.sound instanceof Sound)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDSOUND"));
+  if (!(sound?.sound instanceof Sound)) throw new InvalidSoundError();
 
   if (typeof startVolume === "undefined") startVolume = sound.sound.volume || 0;
   sound.sound.volume = startVolume;
@@ -69,7 +70,7 @@ function fadeSoundFrom(sound: PlaylistSound, duration: number, startVolume: numb
  */
 export function getDefaultIntroSong(actor: unknown): PlaylistSound | undefined {
   const actualActor = coerceActor(actor);
-  if (!(actualActor instanceof Actor)) throw new Error(game.i18n?.localize("THEATREAUTOMATION.ERRORS.INVALIDACTOR") || "Invalid actor");
+  if (!(actualActor instanceof Actor)) throw new InvalidActorError();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
   const playlist = coercePlaylist((<any>actualActor).name);
   if (!(playlist instanceof Playlist)) return;
