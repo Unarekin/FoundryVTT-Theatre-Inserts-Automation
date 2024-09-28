@@ -1374,6 +1374,25 @@ async function introduceActor(actor, message, portraitWait = 0, musicWait = 0, s
   await Promise.all(promises);
 }
 
+// src/lib/mirror.ts
+function mirrorInsert(arg) {
+  if (arg) {
+    const actor = coerceActor(arg);
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    theatre.mirrorInsertById(`theatre-${actor.id}`, false);
+    return wait(500);
+  } else {
+    const speaking = currentlySpeaking();
+    const active = currentlyActive();
+    let actor = null;
+    if (speaking instanceof Actor) actor = speaking;
+    else if (active.length === 1 && active[0] instanceof Actor) actor = active[0];
+    if (!(actor instanceof Actor)) throw new InvalidActorError();
+    theatre.mirrorInsertById(`theatre-${actor.id}`);
+    return wait(500);
+  }
+}
+
 // src/lib/standing.ts
 function getStandingAnimations() {
   return [
@@ -1451,7 +1470,8 @@ var api_default = {
   setFontColor,
   getFont,
   setFont,
-  loadFont
+  loadFont,
+  mirrorInsert
 };
 
 // src/module.ts

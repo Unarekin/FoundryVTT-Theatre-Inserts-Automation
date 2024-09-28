@@ -4,6 +4,7 @@ import { getTextFlyin, setTextFlyin } from "./flyins";
 import { getFont, getFontSize, isValidFont, setFontName, getFontName, setFontSize, setFont, getFontColor, setFontColor, loadFont } from './fonts';
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
+import { mirrorInsert } from "./mirror";
 import { wait } from "./misc";
 import { activateNarratorBar, deactivateNarratorBar, isNarratorBarActive, sendNarration } from "./narration";
 import { isActorStaged, stageActor, unstageActor } from "./staging";
@@ -46,5 +47,7 @@ export default {
   setFontColor,
   getFont,
   setFont,
-  loadFont
+  loadFont,
+
+  mirrorInsert
 };
