@@ -2,6 +2,7 @@ import { activateActor, currentlyActive, currentlySpeaking, deactivateActor, isA
 import { clearEmote, setEmote } from "./emotes";
 import { getTextFlyin, setTextFlyin } from "./flyins";
 import { getFont, getFontSize, isValidFont, setFontName, getFontName, setFontSize, setFont, getFontColor, setFontColor, loadFont } from './fonts';
+import { getImage, setImage } from "./image";
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { mirrorInsert } from "./mirror";
@@ -49,5 +50,8 @@ export default {
   setFont,
   loadFont,
 
-  mirrorInsert
+  mirrorInsert,
+
+  getImage,
+  setImage
 };
