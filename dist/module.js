@@ -1562,6 +1562,26 @@ var api_default = {
   setBaseImage
 };
 
+// src/lib/applications/ExpressionConfiguration.ts
+var ExpressionConfiguration = class {
+  constructor(theatreConfig, DialogElement, actorConfig) {
+    this.theatreConfig = theatreConfig;
+    this.DialogElement = DialogElement;
+    this.actorConfig = actorConfig;
+    this.addInterface();
+  }
+  addInterface() {
+    const nav = this.DialogElement.find("nav.tabs[data-group='theatre-tabs']");
+    const link = document.createElement("a");
+    link.classList.add("item");
+    link.dataset["tab"] = "expressions";
+    const icon = document.createElement("i");
+    icon.classList.add("far", "fa-masks-theater");
+    link.appendChild(icon);
+    nav.append(link);
+  }
+};
+
 // src/module.ts
 Hooks.once("ready", async () => {
   if (game instanceof Game && !game.modules.get("theatre")?.active) {
@@ -1575,5 +1595,8 @@ Hooks.once("ready", async () => {
     window.TheatreAutomation.FLYIN_NAMES = getFlyinAnimations();
     window.TheatreAutomation.FONT_NAMES = getFonts();
   }
+});
+Hooks.on("renderTheatreActorConfig", (theatreConfig, html, actorConfig) => {
+  new ExpressionConfiguration(theatreConfig, html, actorConfig);
 });
 //# sourceMappingURL=module.js.map

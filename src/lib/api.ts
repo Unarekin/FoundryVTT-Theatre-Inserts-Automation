@@ -55,13 +55,6 @@ export default {
 
   getImage,
   setImage,
-
-  setExpression,
-  getExpression,
-  getExpressions,
-  activateExpression,
-  clearExpression,
-
   getBaseImage,
   setBaseImage
 };
