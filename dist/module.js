@@ -531,13 +531,6 @@ var InvalidActorError = class extends LocalizedError {
   }
 };
 
-// src/lib/errors/InvalidExpressionError.ts
-var InvalidExpressionError = class extends LocalizedError {
-  constructor(expression) {
-    super("INVALIDEXPRESSION", { expression });
-  }
-};
-
 // src/lib/errors/InvalidFlyinError.ts
 var InvalidFlyinError = class extends LocalizedError {
   constructor(flyin) {
@@ -577,6 +570,13 @@ var InvalidStandingError = class extends LocalizedError {
 var InvalidURLError = class extends LocalizedError {
   constructor(url) {
     super("INVALIDURL", { url });
+  }
+};
+
+// src/lib/errors/NoChatHookError.ts
+var NoChatHookError = class extends LocalizedError {
+  constructor() {
+    super("NOCHATHOOK");
   }
 };
 
@@ -674,71 +674,6 @@ function clearEmote(arg) {
   const actor = coerceActor(arg);
   if (!(actor instanceof Actor)) throw new InvalidActorError();
   theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
-}
-
-// src/lib/image.ts
-function getImage(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (isActorActive(actor))
-    return theatre.getInsertById(`theatre-${actor.id}`)?.portrait.texture.textureCacheIds[1];
-  return getBaseImage(actor);
-}
-function getBaseImage(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  return actor.flags?.theatre?.baseinsert || actor.img;
-}
-function setBaseImage(arg, url) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  return actor.setFlag("theatre", "baseinsert", url).then(() => {
-  });
-}
-function setImage(arg, image) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (!isActorActive(actor)) throw new ActorNotActiveError();
-  return srcExists(image).then((val) => {
-    if (val) return theatre._AddTextureResource(image, image, `theatre-${actor.id}`, false);
-    else throw new InvalidURLError(image);
-  }).then(() => {
-  });
-}
-
-// src/lib/expressions.ts
-function setExpression(arg, expression, url) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (!url) {
-    return actor.unsetFlag("theatre-inserts-automation", `expressions.${expression}`).then(() => {
-    });
-  } else {
-    return actor.setFlag("theatre-inserts-automation", `expressions`, Object.fromEntries([[expression, url]])).then(() => {
-    });
-  }
-}
-function getExpression(arg, expression) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  return actor.getFlag("theatre-inserts-automation", `expressions.${expression}`) || "";
-}
-function getExpressions(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  return actor.getFlag("theatre-inserts-automation", "expressions") ?? {};
-}
-function activateExpression(arg, expression) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  const url = actor.getFlag("theatre-inserts-automation", "expressions")[expression];
-  if (!url) throw new InvalidExpressionError(expression);
-  return setImage(actor, url);
-}
-function clearExpression(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  return setImage(actor, getBaseImage(actor));
 }
 
 // src/lib/narration.ts
@@ -1023,6 +958,36 @@ function setFontColor(color, arg) {
     if (!insert) throw new ActorNotActiveError();
     insert.textColor = color;
   }
+}
+
+// src/lib/image.ts
+function getImage(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  if (isActorActive(actor))
+    return theatre.getInsertById(`theatre-${actor.id}`)?.portrait.texture.textureCacheIds[1];
+  return getBaseImage(actor);
+}
+function getBaseImage(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  return actor.flags?.theatre?.baseinsert || actor.img;
+}
+function setBaseImage(arg, url) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  return actor.setFlag("theatre", "baseinsert", url).then(() => {
+  });
+}
+function setImage(arg, image) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  if (!isActorActive(actor)) throw new ActorNotActiveError();
+  return srcExists(image).then((val) => {
+    if (val) return theatre._AddTextureResource(image, image, `theatre-${actor.id}`, false);
+    else throw new InvalidURLError(image);
+  }).then(() => {
+  });
 }
 
 // src/lib/applications/IntroductionApplication.ts
@@ -1553,36 +1518,183 @@ var api_default = {
   mirrorInsert,
   getImage,
   setImage,
-  setExpression,
-  getExpression,
-  getExpressions,
-  activateExpression,
-  clearExpression,
   getBaseImage,
   setBaseImage
 };
 
-// src/lib/applications/ExpressionConfiguration.ts
-var ExpressionConfiguration = class {
-  constructor(theatreConfig, DialogElement, actorConfig) {
-    this.theatreConfig = theatreConfig;
-    this.DialogElement = DialogElement;
-    this.actorConfig = actorConfig;
-    this.addInterface();
+// src/lib/applications/SettingsHandler.ts
+var POP_LINE_START = `let tweenId = "portraitPop";`;
+var POP_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenId);`;
+var FLASH_LINE_START = `tweenId = "portraitFlash";`;
+var FLASH_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenId);`;
+var SettingsHandler = class _SettingsHandler {
+  static {
+    Hooks.on("theatreDockActive", () => {
+      if (_SettingsHandler.GetSetting("hideActorName")) _SettingsHandler.HideActorNames();
+      if (_SettingsHandler.GetSetting("hideTextBox")) _SettingsHandler.HideTextBox();
+      if (_SettingsHandler.GetSetting("hideTypingIcon")) _SettingsHandler.HideTypingIcons();
+    });
+    Hooks.once("ready", () => {
+      if (game.settings?.get("theatre-inserts-automation", "hideTextBox")) _SettingsHandler.HideTextBox();
+      else _SettingsHandler.ShowTextBox();
+      _SettingsHandler.OverrideCreateMessageHook();
+    });
+    Hooks.on("createChatMessage", async (message, data, userId) => {
+      if (message.getFlag("theatre", "theatreMessage")) {
+        if (!message.speaker.alias) {
+          const typing = theatre.usersTyping[userId];
+          if (!typing) return;
+          const actorId = typing.theatreId.split("-")[1];
+          const actor = game.actors.get(actorId);
+          if (!(actor instanceof Actor)) throw new InvalidActorError();
+          if (game.modules?.get("chat-portrait").active) {
+            const portrait = message.getFlag("chat-portrait", "src");
+            if (!portrait) {
+              await message.setFlag("chat-portrait", "src", actor.img);
+            }
+          }
+          message.updateSource({
+            speaker: {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+              alias: actor.name
+            }
+          }, { recursive: true });
+        }
+      }
+    });
   }
-  addInterface() {
-    const nav = this.DialogElement.find("nav.tabs[data-group='theatre-tabs']");
-    const link = document.createElement("a");
-    link.classList.add("item");
-    link.dataset["tab"] = "expressions";
-    const icon = document.createElement("i");
-    icon.classList.add("far", "fa-masks-theater");
-    link.appendChild(icon);
-    nav.append(link);
+  /**
+   * .... please do not look at this shameful, shameful fucntion
+   */
+  static OverrideCreateMessageHook() {
+    const hook = _SettingsHandler.FindCreateMessageHook();
+    if (!hook) throw new NoChatHookError();
+    let hasFunctionDeclaration = false;
+    const lines = hook.fn.toString().split("\n").filter((line, index, arr) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("function")) {
+        hasFunctionDeclaration = true;
+        return false;
+      }
+      if (index === arr.length - 1 && hasFunctionDeclaration) return false;
+      if (trimmed.startsWith("KHelpers")) return false;
+      if (trimmed.startsWith("Logger")) return false;
+      return true;
+    });
+    const popStart = lines.findIndex((line) => line.trim() === POP_LINE_START);
+    if (popStart !== -1) lines.splice(popStart, 0, `if (game.settings.get("${"theatre-inserts-automation"}", "suppressPopAnimation") !== true) {`);
+    const popEnd = lines.findIndex((line, index) => index > popStart && line.trim() === POP_LINE_END);
+    if (popEnd !== -1) lines.splice(popEnd + 1, 0, `}`);
+    const flashStart = lines.findIndex((line) => line.trim() === FLASH_LINE_START);
+    if (flashStart !== -1) lines.splice(flashStart, 0, `if (game.settings.get("${"theatre-inserts-automation"}", "suppressFlashAnimation") !== true) {`);
+    const flashEnd = lines.findIndex((line, index) => index > flashStart && line.trim() === FLASH_LINE_END);
+    if (flashEnd !== -1) lines.splice(flashEnd + 1, 0, `}`);
+    console.log(lines.join("\n"));
+    const newFn = new Function("chatEntity", "_", "userId", lines.join("\n"));
+    hook.fn = newFn;
+  }
+  static FindHook(name, lookup) {
+    return Hooks.events[name].find((elem) => elem.fn.toString().split("\n").some((line) => line.trim() === lookup));
+  }
+  static FindPreCreateMessageHook() {
+    return _SettingsHandler.FindHook("preCreateChatMessage", `Logger.debug("preCreateChatMessage", chatMessage);`);
+  }
+  static FindCreateMessageHook() {
+    return _SettingsHandler.FindHook("createChatMessage", `Logger.debug("createChatMessage");`);
+  }
+  static GetSetting(setting) {
+    return game.settings?.get("theatre-inserts-automation", setting);
+  }
+  static HideActorNames() {
+    _SettingsHandler.IterateDocks((dock) => {
+      dock.name = "";
+    });
+  }
+  static HideTypingIcons() {
+    setTimeout(() => {
+      _SettingsHandler.IterateDocks((dock) => {
+        if (!dock.typingBubble) return;
+        else dock.typingBubble.renderable = false;
+      });
+    }, 100);
+  }
+  static ShowTypingIcons() {
+    setTimeout(() => {
+      _SettingsHandler.IterateDocks((dock) => {
+        if (!dock.typingBubble) return;
+        else dock.typingBubble.renderable = true;
+      });
+    }, 100);
+  }
+  static HideTextBox() {
+    $("#theatre-bar").css("opacity", 0);
+  }
+  static ShowTextBox() {
+    $("#theatre-bar").css("opacity", 1);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static IterateDocks(func) {
+    theatre.portraitDocks.forEach(func);
+  }
+  static RegisterSettings() {
+    game.settings?.register("theatre-inserts-automation", "hideTextBox", {
+      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDECHATBOX.NAME"),
+      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDECHATBOX.HINT"),
+      default: false,
+      type: Boolean,
+      config: true,
+      scope: "world",
+      onChange: (value) => {
+        if (value) _SettingsHandler.HideTextBox();
+        else _SettingsHandler.ShowTextBox();
+      }
+    });
+    game.settings?.register("theatre-inserts-automation", "hideActorName", {
+      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEACTORNAME.NAME"),
+      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEACTORNAME.HINT"),
+      default: false,
+      type: Boolean,
+      config: true,
+      scope: "world",
+      onChange: (value) => {
+        if (value) _SettingsHandler.HideActorNames();
+      }
+    });
+    game.settings?.register("theatre-inserts-automation", "hideTypingIcon", {
+      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDETYPINGICON.NAME"),
+      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDETYPINGICON.HINT"),
+      default: false,
+      type: Boolean,
+      config: true,
+      scope: "world",
+      onChange: (hide) => {
+        if (hide) _SettingsHandler.HideTypingIcons();
+        else _SettingsHandler.ShowTypingIcons();
+      }
+    });
+    game.settings?.register("theatre-inserts-automation", "suppressPopAnimation", {
+      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEPOPANIMATION.NAME"),
+      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEPOPANIMATION.HINT"),
+      default: false,
+      type: Boolean,
+      config: true,
+      scope: "world"
+    });
+    game.settings?.register("theatre-inserts-automation", "suppressFlashAnimation", {
+      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEFLASHANIMATION.NAME"),
+      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEFLASHANIMATION.HINT"),
+      default: false,
+      type: Boolean,
+      config: true,
+      scope: "world"
+    });
   }
 };
 
 // src/module.ts
+Hooks.once("init", () => {
+  SettingsHandler.RegisterSettings();
+});
 Hooks.once("ready", async () => {
   if (game instanceof Game && !game.modules.get("theatre")?.active) {
     ui.notifications?.error(game.i18n?.format("THEATREAUTOMATION.ERRORS.THEATREINSERTSNOTFOUND", { MODULENAME: "Theatre Inserts Automation" }));
@@ -1595,8 +1707,5 @@ Hooks.once("ready", async () => {
     window.TheatreAutomation.FLYIN_NAMES = getFlyinAnimations();
     window.TheatreAutomation.FONT_NAMES = getFonts();
   }
-});
-Hooks.on("renderTheatreActorConfig", (theatreConfig, html, actorConfig) => {
-  new ExpressionConfiguration(theatreConfig, html, actorConfig);
 });
 //# sourceMappingURL=module.js.map

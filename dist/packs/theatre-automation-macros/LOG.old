@@ -1,8 +1,11 @@
-2024/10/03-20:41:31.576442 7b44f7200640 Log #16: 0 ops saved to Table #17 OK
-2024/10/03-20:41:31.576539 7b44f7200640 Archiving /home/erica/.local/share/FoundryVTT/Data/modules/theatre-inserts-automation/packs/theatre-automation-macros/000016.log: OK
-2024/10/03-20:41:31.576591 7b44f7200640 Table #13: 1 entries OK
-2024/10/03-20:41:31.576630 7b44f7200640 Table #10: 1 entries OK
-2024/10/03-20:41:31.576677 7b44f7200640 Table #5: 12 entries OK
-2024/10/03-20:41:31.576757 7b44f7200640 Archiving /home/erica/.local/share/FoundryVTT/Data/modules/theatre-inserts-automation/packs/theatre-automation-macros/MANIFEST-000015: OK
-2024/10/03-20:41:31.576787 7b44f7200640 Archiving /home/erica/.local/share/FoundryVTT/Data/modules/theatre-inserts-automation/packs/theatre-automation-macros/MANIFEST-000009: OK
-2024/10/03-20:41:31.584060 7b44f7200640 **** Repaired leveldb /home/erica/.local/share/FoundryVTT/Data/modules/theatre-inserts-automation/packs/theatre-automation-macros; recovered 3 files; 9652 bytes. Some data may have been lost. ****
+<<<<<<< HEAD
+2024/09/26-01:35:13.543571 7921a9400640 Recovering log #6
+2024/09/26-01:35:13.561756 7921a9400640 Delete type=0 #6
+2024/09/26-01:35:13.561800 7921a9400640 Delete type=3 #4
+=======
+2024/09/27-21:34:47.366634 7e21d1400640 Recovering log #11
+2024/09/27-21:34:47.366702 7e21d1400640 Level-0 table #13: started
+2024/09/27-21:34:47.368792 7e21d1400640 Level-0 table #13: 849 bytes OK
+2024/09/27-21:34:47.374389 7e21d1400640 Delete type=3 #9
+2024/09/27-21:34:47.374434 7e21d1400640 Delete type=0 #11
+>>>>>>> release/1.0.1

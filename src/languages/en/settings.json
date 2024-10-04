@@ -1,0 +1,26 @@
+{
+  "THEATREAUTOMATION": {
+    "SETTINGS": {
+      "HIDECHATBOX": {
+        "NAME": "Hide Chat Box",
+        "HINT": "Hides the chat box that displays alongside an actor insert."
+      },
+      "HIDEACTORNAME": {
+        "NAME": "Hide Actor Name",
+        "HINT": "Hides the actor name that shows alongside their portrait in an insert.\nThis WILL require that any active inserts be deactivated then reactivated to take effect."
+      },
+      "HIDETYPINGICON": {
+        "NAME": "Hide Typing Icon",
+        "HINT": "Hides the icon that indicates when a user is typing."
+      },
+      "HIDEPOPANIMATION": {
+        "NAME": "Suppress Portrait Pop Animation",
+        "HINT": "Prevents the pulse animation that an actor's avatar plays when sending a chat message."
+      },
+      "HIDEFLASHANIMATION": {
+        "NAME": "Suppress Portrait Flash Animation",
+        "HINT": "Prevents insert portraits from flashing their text color when sending a chat message."
+      }
+    }
+  }
+}

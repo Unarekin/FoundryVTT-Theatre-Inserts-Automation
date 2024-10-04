@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import api from "./lib/api";
-import ExpressionConfiguration from "./lib/applications/ExpressionConfiguration";
+import SettingsHandler from "./lib/applications/SettingsHandler";
 import { getFlyinAnimations } from "./lib/flyins";
 import { getFonts } from "./lib/fonts";
 import { getStandingAnimations } from "./lib/standing";
 
-// Hooks.once("init", async () => {
 
-// });
+Hooks.once("init", () => {
+  SettingsHandler.RegisterSettings();
+});
 
 Hooks.once("ready", async () => {
   if (game instanceof Game && !game.modules.get("theatre")?.active) {
@@ -33,7 +34,3 @@ Hooks.once("ready", async () => {
 
   }
 });
-
-Hooks.on("renderTheatreActorConfig", (theatreConfig: unknown, html: JQuery<HTMLElement>, actorConfig: unknown) => {
-  new ExpressionConfiguration(theatreConfig, html, actorConfig);
-})

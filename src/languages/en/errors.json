@@ -14,7 +14,8 @@
       "INVALIDCOLOR": "Invalid font color: {color}.",
       "INVALIDSIZE": "Invalid font size: {size}",
       "INVALIDEXPRESSION": "Unknown expression: {expression}",
-      "INVALIDURL": "Image not found: {url}"
+      "INVALIDURL": "Image not found: {url}",
+      "NOCHATHOOK": "Could not locate createChatMessage hook."
     }
   }
 }
