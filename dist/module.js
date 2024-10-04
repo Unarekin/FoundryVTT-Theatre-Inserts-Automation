@@ -531,6 +531,13 @@ var InvalidActorError = class extends LocalizedError {
   }
 };
 
+// src/lib/errors/InvalidExpressionError.ts
+var InvalidExpressionError = class extends LocalizedError {
+  constructor(expression) {
+    super("INVALIDEXPRESSION", { expression });
+  }
+};
+
 // src/lib/errors/InvalidFlyinError.ts
 var InvalidFlyinError = class extends LocalizedError {
   constructor(flyin) {
@@ -563,6 +570,13 @@ var InvalidFontSizeError = class extends LocalizedError {
 var InvalidStandingError = class extends LocalizedError {
   constructor(standing) {
     super("INVALIDSTANDING", { standing });
+  }
+};
+
+// src/lib/errors/InvalidURLError.ts
+var InvalidURLError = class extends LocalizedError {
+  constructor(url) {
+    super("INVALIDURL", { url });
   }
 };
 
@@ -660,6 +674,71 @@ function clearEmote(arg) {
   const actor = coerceActor(arg);
   if (!(actor instanceof Actor)) throw new InvalidActorError();
   theatre.setUserEmote(game.user?.id, `theatre-${actor.id}`, "emote", "", false);
+}
+
+// src/lib/image.ts
+function getImage(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  if (isActorActive(actor))
+    return theatre.getInsertById(`theatre-${actor.id}`)?.portrait.texture.textureCacheIds[1];
+  return getBaseImage(actor);
+}
+function getBaseImage(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  return actor.flags?.theatre?.baseinsert || actor.img;
+}
+function setBaseImage(arg, url) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  return actor.setFlag("theatre", "baseinsert", url).then(() => {
+  });
+}
+function setImage(arg, image) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  if (!isActorActive(actor)) throw new ActorNotActiveError();
+  return srcExists(image).then((val) => {
+    if (val) return theatre._AddTextureResource(image, image, `theatre-${actor.id}`, false);
+    else throw new InvalidURLError(image);
+  }).then(() => {
+  });
+}
+
+// src/lib/expressions.ts
+function setExpression(arg, expression, url) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  if (!url) {
+    return actor.unsetFlag("theatre-inserts-automation", `expressions.${expression}`).then(() => {
+    });
+  } else {
+    return actor.setFlag("theatre-inserts-automation", `expressions`, Object.fromEntries([[expression, url]])).then(() => {
+    });
+  }
+}
+function getExpression(arg, expression) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  return actor.getFlag("theatre-inserts-automation", `expressions.${expression}`) || "";
+}
+function getExpressions(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  return actor.getFlag("theatre-inserts-automation", "expressions") ?? {};
+}
+function activateExpression(arg, expression) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  const url = actor.getFlag("theatre-inserts-automation", "expressions")[expression];
+  if (!url) throw new InvalidExpressionError(expression);
+  return setImage(actor, url);
+}
+function clearExpression(arg) {
+  const actor = coerceActor(arg);
+  if (!(actor instanceof Actor)) throw new InvalidActorError();
+  return setImage(actor, getBaseImage(actor));
 }
 
 // src/lib/narration.ts
@@ -944,20 +1023,6 @@ function setFontColor(color, arg) {
     if (!insert) throw new ActorNotActiveError();
     insert.textColor = color;
   }
-}
-
-// src/lib/image.ts
-function getImage(arg) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (isActorActive(actor))
-    return theatre.getInsertById(`theatre-${actor.id}`)?.portrait.texture.textureCacheIds[1];
-  return actor.flags?.theatre?.baseinsert || actor.img;
-}
-function setImage(arg, image) {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  return theatre._AddTextureResource(image, image, `theatre-${actor.id}`, false);
 }
 
 // src/lib/applications/IntroductionApplication.ts
@@ -1487,7 +1552,14 @@ var api_default = {
   loadFont,
   mirrorInsert,
   getImage,
-  setImage
+  setImage,
+  setExpression,
+  getExpression,
+  getExpressions,
+  activateExpression,
+  clearExpression,
+  getBaseImage,
+  setBaseImage
 };
 
 // src/module.ts

@@ -1,8 +1,9 @@
 import { activateActor, currentlyActive, currentlySpeaking, deactivateActor, isActorActive } from "./activation";
 import { clearEmote, setEmote } from "./emotes";
+import { activateExpression, clearExpression, getExpression, getExpressions, setExpression } from "./expressions";
 import { getTextFlyin, setTextFlyin } from "./flyins";
 import { getFont, getFontSize, isValidFont, setFontName, getFontName, setFontSize, setFont, getFontColor, setFontColor, loadFont } from './fonts';
-import { getImage, setImage } from "./image";
+import { getBaseImage, getImage, setBaseImage, setImage } from "./image";
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { mirrorInsert } from "./mirror";
@@ -53,5 +54,14 @@ export default {
   mirrorInsert,
 
   getImage,
-  setImage
+  setImage,
+
+  setExpression,
+  getExpression,
+  getExpressions,
+  activateExpression,
+  clearExpression,
+
+  getBaseImage,
+  setBaseImage
 };
