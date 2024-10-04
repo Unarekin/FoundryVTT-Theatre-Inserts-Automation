@@ -12,3 +12,4 @@ export * from './InvalidSoundError';
 export * from './InvalidStandingError';
 export * from './InvalidURLError';
 export * from './LocalizedError';
+export * from './NoChatHookError';

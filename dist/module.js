@@ -573,6 +573,13 @@ var InvalidURLError = class extends LocalizedError {
   }
 };
 
+// src/lib/errors/NoChatHookError.ts
+var NoChatHookError = class extends LocalizedError {
+  constructor() {
+    super("NOCHATHOOK");
+  }
+};
+
 // src/lib/staging.ts
 function isActorStaged(arg) {
   const actor = coerceActor(arg);
@@ -1516,6 +1523,10 @@ var api_default = {
 };
 
 // src/lib/applications/SettingsHandler.ts
+var POP_LINE_START = `let tweenId = "portraitPop";`;
+var POP_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenId);`;
+var FLASH_LINE_START = `tweenId = "portraitFlash";`;
+var FLASH_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenId);`;
 var SettingsHandler = class _SettingsHandler {
   static {
     Hooks.on("theatreDockActive", () => {
@@ -1526,7 +1537,40 @@ var SettingsHandler = class _SettingsHandler {
     Hooks.once("ready", () => {
       if (game.settings?.get("theatre-inserts-automation", "hideTextBox")) _SettingsHandler.HideTextBox();
       else _SettingsHandler.ShowTextBox();
+      _SettingsHandler.OverrideChatHook();
     });
+  }
+  /**
+   * .... please do not look at this shameful, shameful fucntion
+   */
+  static OverrideChatHook() {
+    const hook = _SettingsHandler.FindChatHook();
+    if (!hook) throw new NoChatHookError();
+    let hasFunctionDeclaration = false;
+    const lines = hook.fn.toString().split("\n").filter((line, index, arr) => {
+      if (line.trim().startsWith("function")) {
+        hasFunctionDeclaration = true;
+        return false;
+      }
+      if (hasFunctionDeclaration && index === arr.length - 1) return false;
+      if (line.trim().startsWith("KHelpers")) return false;
+      if (line.trim().startsWith("Logger")) return false;
+      return true;
+    });
+    const popStart = lines.findIndex((line) => line.trim() === POP_LINE_START);
+    if (popStart !== -1) lines.splice(popStart, 0, `if (game.settings.get("${"theatre-inserts-automation"}", "suppressPopAnimation") !== true) {`);
+    const popEnd = lines.findIndex((line, index) => index > popStart && line.trim() === POP_LINE_END);
+    if (popEnd !== -1) lines.splice(popEnd + 1, 0, `}`);
+    const flashStart = lines.findIndex((line) => line.trim() === FLASH_LINE_START);
+    if (flashStart !== -1) lines.splice(flashStart, 0, `if (game.settings.get("${"theatre-inserts-automation"}", "suppressFlashAnimation") !== true) {`);
+    const flashEnd = lines.findIndex((line, index) => index > flashStart && line.trim() === FLASH_LINE_END);
+    if (flashEnd !== -1) lines.splice(flashEnd + 1, 0, `}`);
+    const newFn = new Function("chatEntity", "_", "userId", lines.join("\n"));
+    hook.fn = newFn;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  static FindChatHook() {
+    return Hooks.events.createChatMessage.find((elem) => elem.fn.toString().split("\n").some((line) => line.trim() === "let theatreId = null;"));
   }
   static GetSetting(setting) {
     return game.settings?.get("theatre-inserts-automation", setting);
@@ -1539,7 +1583,7 @@ var SettingsHandler = class _SettingsHandler {
   static HideTypingIcons() {
     setTimeout(() => {
       _SettingsHandler.IterateDocks((dock) => {
-        if (!dock.typingBubble) log("No typing bubble:", dock);
+        if (!dock.typingBubble) return;
         else dock.typingBubble.renderable = false;
       });
     }, 100);
@@ -1547,7 +1591,7 @@ var SettingsHandler = class _SettingsHandler {
   static ShowTypingIcons() {
     setTimeout(() => {
       _SettingsHandler.IterateDocks((dock) => {
-        if (!dock.typingBubble) log("No typing bubble:", dock);
+        if (!dock.typingBubble) return;
         else dock.typingBubble.renderable = true;
       });
     }, 100);
@@ -1598,9 +1642,17 @@ var SettingsHandler = class _SettingsHandler {
         else _SettingsHandler.ShowTypingIcons();
       }
     });
-    game.settings?.register("theatre-inserts-automation", "hideSpeakingAnimation", {
-      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDESPEAKANIMATION.NAME"),
-      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDESPEAKANIMATION.HINT"),
+    game.settings?.register("theatre-inserts-automation", "suppressPopAnimation", {
+      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEPOPANIMATION.NAME"),
+      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEPOPANIMATION.HINT"),
+      default: false,
+      type: Boolean,
+      config: true,
+      scope: "world"
+    });
+    game.settings?.register("theatre-inserts-automation", "suppressFlashAnimation", {
+      name: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEFLASHANIMATION.NAME"),
+      hint: game.i18n?.localize("THEATREAUTOMATION.SETTINGS.HIDEFLASHANIMATION.HINT"),
       default: false,
       type: Boolean,
       config: true,

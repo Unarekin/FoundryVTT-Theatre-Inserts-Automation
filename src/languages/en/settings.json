@@ -13,9 +13,13 @@
         "NAME": "Hide Typing Icon",
         "HINT": "Hides the icon that indicates when a user is typing."
       },
-      "HIDESPEAKANIMATION": {
-        "NAME": "Hide Animation on Sending Message",
-        "HINT": "Prevents the pulsing animation that an actor's avatar plays when sending a chat message."
+      "HIDEPOPANIMATION": {
+        "NAME": "Suppress Portrait Pop Animation",
+        "HINT": "Prevents the pulse animation that an actor's avatar plays when sending a chat message."
+      },
+      "HIDEFLASHANIMATION": {
+        "NAME": "Suppress Portrait Flash Animation",
+        "HINT": "Prevents insert portraits from flashing their text color when sending a chat message."
       }
     }
   }
