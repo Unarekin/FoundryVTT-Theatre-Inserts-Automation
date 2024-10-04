@@ -1537,24 +1537,48 @@ var SettingsHandler = class _SettingsHandler {
     Hooks.once("ready", () => {
       if (game.settings?.get("theatre-inserts-automation", "hideTextBox")) _SettingsHandler.HideTextBox();
       else _SettingsHandler.ShowTextBox();
-      _SettingsHandler.OverrideChatHook();
+      _SettingsHandler.OverrideCreateMessageHook();
+    });
+    Hooks.on("createChatMessage", async (message, data, userId) => {
+      if (message.getFlag("theatre", "theatreMessage")) {
+        if (!message.speaker.alias) {
+          const typing = theatre.usersTyping[userId];
+          if (!typing) return;
+          const actorId = typing.theatreId.split("-")[1];
+          const actor = game.actors.get(actorId);
+          if (!(actor instanceof Actor)) throw new InvalidActorError();
+          if (game.modules?.get("chat-portrait").active) {
+            const portrait = message.getFlag("chat-portrait", "src");
+            if (!portrait) {
+              await message.setFlag("chat-portrait", "src", actor.img);
+            }
+          }
+          message.updateSource({
+            speaker: {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+              alias: actor.name
+            }
+          }, { recursive: true });
+        }
+      }
     });
   }
   /**
    * .... please do not look at this shameful, shameful fucntion
    */
-  static OverrideChatHook() {
-    const hook = _SettingsHandler.FindChatHook();
+  static OverrideCreateMessageHook() {
+    const hook = _SettingsHandler.FindCreateMessageHook();
     if (!hook) throw new NoChatHookError();
     let hasFunctionDeclaration = false;
     const lines = hook.fn.toString().split("\n").filter((line, index, arr) => {
-      if (line.trim().startsWith("function")) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("function")) {
         hasFunctionDeclaration = true;
         return false;
       }
-      if (hasFunctionDeclaration && index === arr.length - 1) return false;
-      if (line.trim().startsWith("KHelpers")) return false;
-      if (line.trim().startsWith("Logger")) return false;
+      if (index === arr.length - 1 && hasFunctionDeclaration) return false;
+      if (trimmed.startsWith("KHelpers")) return false;
+      if (trimmed.startsWith("Logger")) return false;
       return true;
     });
     const popStart = lines.findIndex((line) => line.trim() === POP_LINE_START);
@@ -1565,12 +1589,18 @@ var SettingsHandler = class _SettingsHandler {
     if (flashStart !== -1) lines.splice(flashStart, 0, `if (game.settings.get("${"theatre-inserts-automation"}", "suppressFlashAnimation") !== true) {`);
     const flashEnd = lines.findIndex((line, index) => index > flashStart && line.trim() === FLASH_LINE_END);
     if (flashEnd !== -1) lines.splice(flashEnd + 1, 0, `}`);
+    console.log(lines.join("\n"));
     const newFn = new Function("chatEntity", "_", "userId", lines.join("\n"));
     hook.fn = newFn;
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  static FindChatHook() {
-    return Hooks.events.createChatMessage.find((elem) => elem.fn.toString().split("\n").some((line) => line.trim() === "let theatreId = null;"));
+  static FindHook(name, lookup) {
+    return Hooks.events[name].find((elem) => elem.fn.toString().split("\n").some((line) => line.trim() === lookup));
+  }
+  static FindPreCreateMessageHook() {
+    return _SettingsHandler.FindHook("preCreateChatMessage", `Logger.debug("preCreateChatMessage", chatMessage);`);
+  }
+  static FindCreateMessageHook() {
+    return _SettingsHandler.FindHook("createChatMessage", `Logger.debug("createChatMessage");`);
   }
   static GetSetting(setting) {
     return game.settings?.get("theatre-inserts-automation", setting);

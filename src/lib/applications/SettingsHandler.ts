@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import { NoChatHookError } from "../errors";
+import { InvalidActorError, NoChatHookError } from "../errors";
 
 
 const POP_LINE_START = `let tweenId = "portraitPop";`;
@@ -8,6 +8,13 @@ const POP_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenI
 
 const FLASH_LINE_START = `tweenId = "portraitFlash";`;
 const FLASH_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenId);`;
+
+interface MessageHook {
+  hook: string;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  fn: Function;
+  once: boolean;
+}
 
 export default class SettingsHandler {
   static {
@@ -22,36 +29,73 @@ export default class SettingsHandler {
       if (game.settings?.get(__MODULE_ID__, "hideTextBox")) SettingsHandler.HideTextBox();
       else SettingsHandler.ShowTextBox();
 
-      SettingsHandler.OverrideChatHook();
+      SettingsHandler.OverrideCreateMessageHook();
 
+    });
+
+    Hooks.on("createChatMessage", async (message: ChatMessage, data: unknown, userId: string) => {
+      if (message.getFlag("theatre", "theatreMessage")) {
+        // It's a theatre message, yo
+        if (!message.speaker.alias) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+          const typing = (<any>theatre).usersTyping[userId];
+          if (!typing) return;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+          const actorId = typing.theatreId.split("-")[1];
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+          const actor = game.actors.get(actorId);
+          if (!(actor instanceof Actor)) throw new InvalidActorError();
+
+
+          // Add the actor portrait to the message if Chat Portraits is active and one isn't set
+          if (game.modules?.get("chat-portrait").active) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const portrait = message.getFlag("chat-portrait", "src");
+            if (!portrait) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await message.setFlag("chat-portrait", "src", (<any>actor).img);
+            }
+          }
+          message.updateSource({
+            speaker: {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+              alias: (<any>actor).name,
+            }
+          }, { recursive: true });
+        }
+      }
     });
   }
 
   /**
    * .... please do not look at this shameful, shameful fucntion
    */
-  static OverrideChatHook() {
-    const hook = SettingsHandler.FindChatHook();
+  static OverrideCreateMessageHook() {
+    const hook = SettingsHandler.FindCreateMessageHook();
     if (!hook) throw new NoChatHookError();
 
 
     let hasFunctionDeclaration: boolean = false;
-    // Filter out stuff for later
-    const lines: string[] = hook.fn.toString().split("\n")
-      .filter((line: string, index: number, arr: string[]) => {
-        // If we start with a "function" remove it
-        if (line.trim().startsWith("function")) {
+
+    const lines: string[] = hook.fn
+      .toString()
+      .split("\n")
+      .filter((line: string, index: number, arr: string[]): boolean => {
+        const trimmed = line.trim();
+
+        // Trim out function declaration
+        if (trimmed.startsWith("function")) {
           hasFunctionDeclaration = true;
           return false;
         }
-        // If we start with a "function", also remove the last line.
-        if (hasFunctionDeclaration && index === arr.length - 1) return false;
 
-        // Remove calls to KHelpers
-        if (line.trim().startsWith("KHelpers")) return false;
+        // And final closing brace if there's a function definition
+        if (index === arr.length - 1 && hasFunctionDeclaration) return false;
 
-        // Remove calls to Logger
-        if (line.trim().startsWith("Logger")) return false;
+        // Remove calls to KHelpers, because the object won't be in scope
+        if (trimmed.startsWith("KHelpers")) return false;
+        // Same with calls to Logger
+        if (trimmed.startsWith("Logger")) return false;
 
         return true;
       });
@@ -67,19 +111,28 @@ export default class SettingsHandler {
     const flashEnd = lines.findIndex((line: string, index: number) => index > flashStart && line.trim() === FLASH_LINE_END);
     if (flashEnd !== -1) lines.splice(flashEnd + 1, 0, `}`);
 
+    console.log(lines.join("\n"));
+
 
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
     const newFn = new Function("chatEntity", "_", "userId", lines.join("\n"));
 
+    // console.log(newFn.toString());
 
     hook.fn = newFn;
   }
 
-
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  static FindChatHook(): { hook: string, fn: Function, id: number, once: boolean } | undefined {
+  static FindHook(name: string, lookup: string): MessageHook | undefined {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-    return (<any>Hooks.events).createChatMessage.find((elem: any) => elem.fn.toString().split("\n").some((line: string) => line.trim() === "let theatreId = null;"));
+    return (<any>Hooks.events)[name].find((elem: any) => elem.fn.toString().split("\n").some((line: string) => line.trim() === lookup));
+  }
+
+  static FindPreCreateMessageHook(): MessageHook | undefined {
+    return SettingsHandler.FindHook("preCreateChatMessage", `Logger.debug("preCreateChatMessage", chatMessage);`);
+  }
+
+  static FindCreateMessageHook(): MessageHook | undefined {
+    return SettingsHandler.FindHook("createChatMessage", `Logger.debug("createChatMessage");`);
   }
 
   static GetSetting<t = unknown>(setting: string): t {

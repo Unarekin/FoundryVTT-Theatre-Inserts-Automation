@@ -6,6 +6,7 @@ import { getFlyinAnimations } from "./lib/flyins";
 import { getFonts } from "./lib/fonts";
 import { getStandingAnimations } from "./lib/standing";
 
+
 Hooks.once("init", () => {
   SettingsHandler.RegisterSettings();
 });
