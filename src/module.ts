@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import api from "./lib/api";
+import ExpressionConfiguration from "./lib/applications/ExpressionConfiguration";
 import { getFlyinAnimations } from "./lib/flyins";
 import { getFonts } from "./lib/fonts";
 import { getStandingAnimations } from "./lib/standing";
@@ -32,3 +33,7 @@ Hooks.once("ready", async () => {
 
   }
 });
+
+Hooks.on("renderTheatreActorConfig", (theatreConfig: unknown, html: JQuery<HTMLElement>, actorConfig: unknown) => {
+  new ExpressionConfiguration(theatreConfig, html, actorConfig);
+})

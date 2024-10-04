@@ -1,6 +1,7 @@
 export * from './ActorNotActiveError';
 export * from './ActorNotStagedError';
 export * from './InvalidActorError';
+export * from './InvalidExpressionError';
 export * from './InvalidFlyinError';
 export * from './InvalidFontColorError';
 export * from './InvalidFontError';
@@ -9,4 +10,5 @@ export * from './InvalidParametersError';
 export * from './InvalidPlaylistError';
 export * from './InvalidSoundError';
 export * from './InvalidStandingError';
+export * from './InvalidURLError';
 export * from './LocalizedError';
