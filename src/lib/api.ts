@@ -1,6 +1,5 @@
 import { activateActor, currentlyActive, currentlySpeaking, deactivateActor, isActorActive } from "./activation";
 import { clearEmote, setEmote } from "./emotes";
-import { activateExpression, clearExpression, getExpression, getExpressions, setExpression } from "./expressions";
 import { getTextFlyin, setTextFlyin } from "./flyins";
 import { getFont, getFontSize, isValidFont, setFontName, getFontName, setFontSize, setFont, getFontColor, setFontColor, loadFont } from './fonts';
 import { getBaseImage, getImage, setBaseImage, setImage } from "./image";
