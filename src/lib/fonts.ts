@@ -1,6 +1,6 @@
 import { currentlyActive, currentlySpeaking, isActorActive } from "./activation";
 import { coerceActor } from "./coercion";
-import { ActorNotActiveError, InvalidActorError, InvalidFontColorError, InvalidFontError, InvalidFontSizeError } from "./errors";
+import { ActorNotActiveError, InvalidActorError, InvalidColorError, InvalidFontError, InvalidFontSizeError } from "./errors";
 import { log } from "./log";
 import { isValidColor, isValidURL } from "./misc";
 
@@ -174,7 +174,7 @@ export function setFont(config: Partial<FontConfig>, name: "narrator"): void
 export function setFont(config: Partial<FontConfig>, arg?: unknown): void {
   if (config.name && !isValidFont(config.name)) throw new InvalidFontError(config.name);
   if (config.size && !(config.size > 0 && config.size < 4)) throw new InvalidFontSizeError(config.size);
-  if (config.color && !isValidColor(config.color)) throw new InvalidFontColorError(config.color);
+  if (config.color && !isValidColor(config.color)) throw new InvalidColorError(config.color);
   if (arg === "narrator") {
     if (config.name) theatre.theatreNarrator.setAttribute("textfont", config.name);
     if (config.size) theatre.theatreNarrator.setAttribute("textsize", config.size.toString());
@@ -542,7 +542,7 @@ export function setFontColor(color: string, token: Token): void
  */
 export function setFontColor(color: string, name: "narrator"): void
 export function setFontColor(color: string, arg?: unknown): void {
-  if (!isValidColor(color)) throw new InvalidFontColorError(color);
+  if (!isValidColor(color)) throw new InvalidColorError(color);
 
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textcolor", color);

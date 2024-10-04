@@ -501,6 +501,60 @@ function isValidURL(url) {
     return false;
   }
 }
+function randomColor() {
+  const goldenRatio = 0.618033988749895;
+  let h = Math.random();
+  h += goldenRatio;
+  h %= 1;
+  const s = 0.5;
+  const v = 0.95;
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  switch (i % 6) {
+    case 0:
+      r = v;
+      g = t;
+      b = p;
+      break;
+    case 1:
+      r = q;
+      g = v;
+      b = p;
+      break;
+    case 2:
+      r = p;
+      g = v;
+      b = t;
+      break;
+    case 3:
+      r = p;
+      g = q;
+      b = v;
+      break;
+    case 4:
+      r = t;
+      g = p;
+      b = v;
+      break;
+    case 5:
+      r = v;
+      g = p;
+      b = q;
+      break;
+  }
+  return [
+    "#",
+    Math.floor(r * 255).toString(16).padStart(2, "0"),
+    Math.floor(g * 255).toString(16).padStart(2, "0"),
+    Math.floor(b * 255).toString(16).padStart(2, "0")
+  ].join("");
+}
 
 // src/lib/errors/LocalizedError.ts
 var LocalizedError = class extends Error {
@@ -531,17 +585,17 @@ var InvalidActorError = class extends LocalizedError {
   }
 };
 
+// src/lib/errors/InvalidColorError.ts
+var InvalidColorError = class extends LocalizedError {
+  constructor(color) {
+    super("INVALIDCOLOR", { color });
+  }
+};
+
 // src/lib/errors/InvalidFlyinError.ts
 var InvalidFlyinError = class extends LocalizedError {
   constructor(flyin) {
     super("INVALIDFLYIN", { flyin });
-  }
-};
-
-// src/lib/errors/InvalidFontColorError.ts
-var InvalidFontColorError = class extends LocalizedError {
-  constructor(color) {
-    super("INVALIDCOLOR", { color });
   }
 };
 
@@ -652,6 +706,67 @@ function currentlyActive() {
     const [, id] = elemId.split("-");
     return game.actors.get(id);
   }).filter((elem) => !!elem);
+}
+
+// src/lib/animations.ts
+function popPortrait(arg, duration) {
+  return new Promise((resolve, reject) => {
+    try {
+      const actor = coerceActor(arg);
+      if (!(actor instanceof Actor)) throw new InvalidActorError();
+      const insert = theatre.getInsertById(`theatre-${actor.id}`);
+      if (!insert) throw new ActorNotActiveError();
+      const tweenId = "portraitPop";
+      const tween = TweenMax.to(insert.portraitContainer, duration ? duration / 1e3 : 0.25, {
+        pixi: { scaleX: insert.mirrored ? -1.05 : 1.05, scaleY: 1.05 },
+        ease: Power3.easeOut,
+        repeat: 1,
+        yoyo: true,
+        onComplete: function(ctx, imgId, tweenId2) {
+          const insert2 = theatre.getInsertById(imgId);
+          if (insert2) {
+            this.targets()[0].scale.x = insert2.mirrored ? -1 : 1;
+            this.targets()[0].scale.y = 1;
+          }
+          ctx._removeDockTween(imgId, this, tweenId2);
+          resolve();
+        },
+        onCompleteParams: [theatre, insert.imgId, tweenId]
+      });
+      theatre._addDockTween(insert.imgId, tween, tweenId);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+function flashPortrait(arg, color, duration) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!isValidColor(color)) throw new InvalidColorError(color);
+      const actor = coerceActor(arg);
+      if (!(actor instanceof Actor)) throw new InvalidActorError();
+      const insert = theatre.getInsertById(`theatre-${actor.id}`);
+      if (!insert) throw new ActorNotActiveError();
+      const tweenId = "portraitFlash";
+      const tween = TweenMax.to(insert.portrait, duration ? duration / 1e3 : 0.25, {
+        pixi: {
+          tint: theatre.getPlayerFlashColor(null, color)
+        },
+        ease: Power3.easeOut,
+        repeat: 1,
+        yoyo: true,
+        onComplete: function(ctx, imgId, tweenId2) {
+          this.targets()[0].tint = 16777215;
+          ctx._removeDockTween(imgId, this, tweenId2);
+          resolve();
+        },
+        onCompleteParams: [theatre, insert.imgId, tweenId]
+      });
+      theatre._addDockTween(insert.imgId, tween, tweenId);
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 // src/lib/emotes.ts
@@ -811,7 +926,7 @@ function getFont(arg) {
 function setFont(config, arg) {
   if (config.name && !isValidFont(config.name)) throw new InvalidFontError(config.name);
   if (config.size && !(config.size > 0 && config.size < 4)) throw new InvalidFontSizeError(config.size);
-  if (config.color && !isValidColor(config.color)) throw new InvalidFontColorError(config.color);
+  if (config.color && !isValidColor(config.color)) throw new InvalidColorError(config.color);
   if (arg === "narrator") {
     if (config.name) theatre.theatreNarrator.setAttribute("textfont", config.name);
     if (config.size) theatre.theatreNarrator.setAttribute("textsize", config.size.toString());
@@ -938,7 +1053,7 @@ function getFontColor(arg) {
   }
 }
 function setFontColor(color, arg) {
-  if (!isValidColor(color)) throw new InvalidFontColorError(color);
+  if (!isValidColor(color)) throw new InvalidColorError(color);
   if (arg === "narrator") {
     theatre.theatreNarrator.setAttribute("textcolor", color);
   } else if (arg) {
@@ -1484,6 +1599,7 @@ function getTextStanding(arg) {
 // src/lib/api.ts
 var api_default = {
   wait,
+  randomColor,
   activateActor,
   deactivateActor,
   isActorActive,
@@ -1519,7 +1635,9 @@ var api_default = {
   getImage,
   setImage,
   getBaseImage,
-  setBaseImage
+  setBaseImage,
+  popPortrait,
+  flashPortrait
 };
 
 // src/lib/applications/SettingsHandler.ts
@@ -1527,6 +1645,20 @@ var POP_LINE_START = `let tweenId = "portraitPop";`;
 var POP_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenId);`;
 var FLASH_LINE_START = `tweenId = "portraitFlash";`;
 var FLASH_LINE_END = `Theatre.instance._addDockTween(insert.imgId, tween, tweenId);`;
+var THEATRE_CONSTANTS = {
+  MODULE_ID: "theatre",
+  PATH: "modules/theatre/",
+  PREFIX_I18N: "Theatre",
+  "API.EVENT_TYPE.sceneevent": "sceneevent",
+  "API.EVENT_TYPE.typingevent": "typingevent",
+  "API.EVENT_TYPE.resyncevent": "resyncevent",
+  "API.EVENT_TYPE.reqresync": "reqresync",
+  SOCKET: "module.theatre",
+  NARRATOR: "Narrator",
+  ICONLIB: "modules/theatre/assets/graphics/emotes",
+  DEFAULT_PORTRAIT: "icons/mystery-man.png",
+  PREFIX_ACTOR_ID: "theatre-"
+};
 var SettingsHandler = class _SettingsHandler {
   static {
     Hooks.on("theatreDockActive", () => {
@@ -1589,8 +1721,12 @@ var SettingsHandler = class _SettingsHandler {
     if (flashStart !== -1) lines.splice(flashStart, 0, `if (game.settings.get("${"theatre-inserts-automation"}", "suppressFlashAnimation") !== true) {`);
     const flashEnd = lines.findIndex((line, index) => index > flashStart && line.trim() === FLASH_LINE_END);
     if (flashEnd !== -1) lines.splice(flashEnd + 1, 0, `}`);
-    console.log(lines.join("\n"));
-    const newFn = new Function("chatEntity", "_", "userId", lines.join("\n"));
+    let funcText = lines.join("\n");
+    Object.entries(THEATRE_CONSTANTS).forEach(([key, value]) => {
+      const parsedValue = typeof value === "string" ? `"${value}"` : value;
+      funcText = funcText.replaceAll(new RegExp(`CONSTANTS.${key}`, "g"), parsedValue);
+    });
+    const newFn = new Function("chatEntity", "_", "userId", funcText);
     hook.fn = newFn;
   }
   static FindHook(name, lookup) {

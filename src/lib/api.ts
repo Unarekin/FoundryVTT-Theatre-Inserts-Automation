@@ -1,4 +1,5 @@
 import { activateActor, currentlyActive, currentlySpeaking, deactivateActor, isActorActive } from "./activation";
+import { flashPortrait, popPortrait } from "./animations";
 import { clearEmote, setEmote } from "./emotes";
 import { getTextFlyin, setTextFlyin } from "./flyins";
 import { getFont, getFontSize, isValidFont, setFontName, getFontName, setFontSize, setFont, getFontColor, setFontColor, loadFont } from './fonts';
@@ -6,13 +7,16 @@ import { getBaseImage, getImage, setBaseImage, setImage } from "./image";
 import { getActorIntroData, introduceActor } from "./introduction";
 import { sendMessage } from "./messaging";
 import { mirrorInsert } from "./mirror";
-import { wait } from "./misc";
+import { randomColor, wait } from "./misc";
 import { activateNarratorBar, deactivateNarratorBar, isNarratorBarActive, sendNarration } from "./narration";
 import { isActorStaged, stageActor, unstageActor } from "./staging";
 import { getTextStanding, setTextStanding } from "./standing";
 
 export default {
   wait,
+  randomColor,
+
+
   activateActor,
   deactivateActor,
   isActorActive,

@@ -16,6 +16,22 @@ interface MessageHook {
   once: boolean;
 }
 
+const THEATRE_CONSTANTS = {
+  MODULE_ID: "theatre",
+  PATH: "modules/theatre/",
+  PREFIX_I18N: "Theatre",
+  "API.EVENT_TYPE.sceneevent": "sceneevent",
+  "API.EVENT_TYPE.typingevent": "typingevent",
+  "API.EVENT_TYPE.resyncevent": "resyncevent",
+  "API.EVENT_TYPE.reqresync": "reqresync",
+  SOCKET: "module.theatre",
+  NARRATOR: "Narrator",
+  ICONLIB: "modules/theatre/assets/graphics/emotes",
+  DEFAULT_PORTRAIT: "icons/mystery-man.png",
+  PREFIX_ACTOR_ID: "theatre-",
+}
+
+
 export default class SettingsHandler {
   static {
     Hooks.on("theatreDockActive", () => {
@@ -111,11 +127,17 @@ export default class SettingsHandler {
     const flashEnd = lines.findIndex((line: string, index: number) => index > flashStart && line.trim() === FLASH_LINE_END);
     if (flashEnd !== -1) lines.splice(flashEnd + 1, 0, `}`);
 
-    console.log(lines.join("\n"));
+    let funcText = lines.join("\n");
 
+    // Manually substitute our Theatre constants because we lose scope
+    Object.entries(THEATRE_CONSTANTS).forEach(([key, value]) => {
+      const parsedValue = typeof (value) === "string" ? `"${value}"` : value;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      funcText = funcText.replaceAll(new RegExp(`CONSTANTS.${key}`, "g"), parsedValue);
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    const newFn = new Function("chatEntity", "_", "userId", lines.join("\n"));
+    const newFn = new Function("chatEntity", "_", "userId", funcText);
 
     // console.log(newFn.toString());
 
