@@ -2,6 +2,14 @@
 ![GitHub License](https://img.shields.io/github/license/Unarekin/FoundryVTT-Theatre-Inserts-Automation)
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/Unarekin/FoundryVTT-Theatre-Inserts-Automation)
 
+## Maintenance Mode
+**This module is now in maintenance mode**
+
+As this module has developed, it has clearly outgrown what is reasonable to implement as a module meant to extend another, and as such it will be entering maintenance mode.  I will be patching any bugs that crop up, but not adding new functionality.
+Instead, I will be working on a module meant as a full replacement directy integrating much of the functionality added in this one, available here:
+
+[Stage Manager](https://github.com/Unarekin/FoundryVTT-Stage-Manager)
+
 # Theatre Inserts Automation
 
 This module provides some convenience functions for interacting with the [Theatre Inserts](https://github.com/League-of-Foundry-Developers/fvtt-module-theatre) module.
