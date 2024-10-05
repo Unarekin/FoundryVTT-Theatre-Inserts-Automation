@@ -15,7 +15,9 @@
       "INVALIDSIZE": "Invalid font size: {size}",
       "INVALIDEXPRESSION": "Unknown expression: {expression}",
       "INVALIDURL": "Image not found: {url}",
-      "NOCHATHOOK": "Could not locate createChatMessage hook."
+      "NOCHATHOOK": "Could not locate createChatMessage hook.",
+      "INVALIDCOMPENDIUM": "Invalid compendium specified: {id}",
+      "FILENOTFOUND": "File not found: {path}"
     }
   }
 }

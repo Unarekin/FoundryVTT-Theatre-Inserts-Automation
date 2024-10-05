@@ -1,5 +1,45 @@
 {
   "THEATREAUTOMATION": {
+    "DEMO": {
+      "INTRO": {
+        "FIRST": "Welcome to the Theatre Inserts Automation kitchen sink demo!",
+        "SECOND": "This macro should serve as a fairly comprehensive demonstration of the functionality provided by this module."
+      },
+      "NARRATION": {
+        "FIRST": "We've already shown that we can send messages as the narrator, but we can also do a few things to alter the text's appearance.",
+        "FONTS": {
+          "FIRST": "Like change the font!  This font is {font}.",
+          "SECOND": "And this one is {font}.",
+          "THIRD": "And back to the default font, {font}."
+        },
+        "FLYINS": {
+          "FIRST": "We can also change the fly-in animation, which is the animation used to first display the text.",
+          "SECOND": "The default animation, if you were curious, is {flyin}.",
+          "THIRD": "There are {count} fly-in animations we can use, such as..."
+        },
+        "STANDINGS": {
+          "FIRST": "We can also change the standing animation, which animates the text while it's displayed.",
+          "SECOND": "As with the fly-in animations there are several options from which to choose.",
+          "THIRD": "Or, well, {count} to be precise.  Options include:"
+        },
+        "COLORS": {
+          "FIRST": "We can also change the font color!",
+          "SECOND": "To, say, {color}",
+          "THIRD": "Or, perhaps, {color}?",
+          "FOURTH": "A super secret bonus feature of this module is that it also includes a function to randomly generate a color."
+        }
+      },
+      "FONTS": {
+        "FIRST": "Why hello there, I'm one of your temporary actors",
+        "SECOND": "Much like with the narrator bar, we can change the font used for an actor insert.",
+        "THIRD": "Like so.  This font is {font}."
+      },
+      "TEMPACTORS": {
+        "FIRST": "For the next part, we need to create some temporary actors since Theatre Inserts doesn't support using actors directly from compendia.",
+        "SECOND": "We'll clean up these temporary actors after the macro finishes, but if that fails, you can delete the {folder} folder."
+      },
+      "REMOVINGTEMPFOLDER": "Cleaning up temporary actor folder."
+    },
     "ERRORS": {
       "THEATREINSERTSNOTFOUND": "{MODULENAME} requires that Theatre Inserts be installed and active.",
       "INVALIDACTOR": "Invalid actor provided.",
@@ -15,7 +55,9 @@
       "INVALIDSIZE": "Invalid font size: {size}",
       "INVALIDEXPRESSION": "Unknown expression: {expression}",
       "INVALIDURL": "Image not found: {url}",
-      "NOCHATHOOK": "Could not locate createChatMessage hook."
+      "NOCHATHOOK": "Could not locate createChatMessage hook.",
+      "INVALIDCOMPENDIUM": "Invalid compendium specified: {id}",
+      "FILENOTFOUND": "File not found: {path}"
     },
     "DIALOGS": {
       "INTRO": {

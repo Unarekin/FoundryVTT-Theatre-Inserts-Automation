@@ -708,67 +708,6 @@ function currentlyActive() {
   }).filter((elem) => !!elem);
 }
 
-// src/lib/animations.ts
-function popPortrait(arg, duration) {
-  return new Promise((resolve, reject) => {
-    try {
-      const actor = coerceActor(arg);
-      if (!(actor instanceof Actor)) throw new InvalidActorError();
-      const insert = theatre.getInsertById(`theatre-${actor.id}`);
-      if (!insert) throw new ActorNotActiveError();
-      const tweenId = "portraitPop";
-      const tween = TweenMax.to(insert.portraitContainer, duration ? duration / 1e3 : 0.25, {
-        pixi: { scaleX: insert.mirrored ? -1.05 : 1.05, scaleY: 1.05 },
-        ease: Power3.easeOut,
-        repeat: 1,
-        yoyo: true,
-        onComplete: function(ctx, imgId, tweenId2) {
-          const insert2 = theatre.getInsertById(imgId);
-          if (insert2) {
-            this.targets()[0].scale.x = insert2.mirrored ? -1 : 1;
-            this.targets()[0].scale.y = 1;
-          }
-          ctx._removeDockTween(imgId, this, tweenId2);
-          resolve();
-        },
-        onCompleteParams: [theatre, insert.imgId, tweenId]
-      });
-      theatre._addDockTween(insert.imgId, tween, tweenId);
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-function flashPortrait(arg, color, duration) {
-  return new Promise((resolve, reject) => {
-    try {
-      if (!isValidColor(color)) throw new InvalidColorError(color);
-      const actor = coerceActor(arg);
-      if (!(actor instanceof Actor)) throw new InvalidActorError();
-      const insert = theatre.getInsertById(`theatre-${actor.id}`);
-      if (!insert) throw new ActorNotActiveError();
-      const tweenId = "portraitFlash";
-      const tween = TweenMax.to(insert.portrait, duration ? duration / 1e3 : 0.25, {
-        pixi: {
-          tint: theatre.getPlayerFlashColor(null, color)
-        },
-        ease: Power3.easeOut,
-        repeat: 1,
-        yoyo: true,
-        onComplete: function(ctx, imgId, tweenId2) {
-          this.targets()[0].tint = 16777215;
-          ctx._removeDockTween(imgId, this, tweenId2);
-          resolve();
-        },
-        onCompleteParams: [theatre, insert.imgId, tweenId]
-      });
-      theatre._addDockTween(insert.imgId, tween, tweenId);
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
 // src/lib/emotes.ts
 function setEmote(arg, emote) {
   const actor = coerceActor(arg);
@@ -1465,16 +1404,21 @@ var IntroductionApplication = class extends FormApplication {
 };
 
 // src/lib/messaging.ts
-function sendMessage(arg, message, flyin = "typewriter") {
-  const actor = coerceActor(arg);
-  if (!(actor instanceof Actor)) throw new InvalidActorError();
-  if (!isActorStaged(actor)) stageActor(actor);
-  return (isActorActive(actor) ? Promise.resolve() : activateActor(actor)).then(() => {
-    if (!isActorSpeaking(actor)) setSpeakingAs(actor);
-    const oldFlyin = getTextFlyin();
-    setTextFlyin(flyin);
-    sendChatMessage(actor.name, message);
-    setTextFlyin(oldFlyin);
+function sendMessage(arg, message) {
+  return new Promise((resolve, reject) => {
+    (async () => {
+      try {
+        const actor = coerceActor(arg);
+        if (!(actor instanceof Actor)) throw new InvalidActorError();
+        if (!isActorStaged(actor)) stageActor(actor);
+        if (!isActorActive(actor)) await activateActor(actor);
+        if (!isActorSpeaking(actor)) setSpeakingAs(actor);
+        sendChatMessage(actor.name, message);
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    })();
   });
 }
 function setSpeakingAs(actor) {
@@ -1635,9 +1579,7 @@ var api_default = {
   getImage,
   setImage,
   getBaseImage,
-  setBaseImage,
-  popPortrait,
-  flashPortrait
+  setBaseImage
 };
 
 // src/lib/applications/SettingsHandler.ts

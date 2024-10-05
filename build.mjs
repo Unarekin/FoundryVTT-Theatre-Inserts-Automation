@@ -84,6 +84,7 @@ const STATIC_FILES = [
   { src: path.join(SRC_PATH, "fonts"), dest: "fonts" },
   { src: TEMPLATE_PATH, dest: "templates" },
   { src: path.join(SRC_PATH, "packs"), dest: "packs" },
+  { src: path.join(SRC_PATH, "assets"), dest: "assets"}
 ];
 
 const copyPlugins = [];
