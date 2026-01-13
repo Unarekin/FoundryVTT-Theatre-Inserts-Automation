@@ -72,3 +72,60 @@ if (res) {
   );
 }
 ```
+### Automated dialogue
+
+This allows for automated dialogue between characters with calculated line duration for smooth correspondence.
+
+```javascript
+function calculateWaitTime(message, msPerChar = 50, buffer = 1000) { // This calculates the duration of the lines displayed on screen, tested only with the "Typewriter" fly in. Default is 50ms per character with 1000ms buffer.
+    return message.length * msPerChar + buffer; 
+}
+
+async function sendAndWait(speaker, message) {                  // This sends the line and waits for the calculated time before proceeding.
+    await TheatreAutomation.sendMessage(speaker, message);
+    await TheatreAutomation.wait(calculateWaitTime(message));
+}
+
+await TheatreAutomation.activateActor("Actor Name"); // Replace with the actual actor name. You don't have to activate an actor here as the sendAndWait function will handle it automatically. 
+// However, Theatre Inserts will always place the first activated actor to the left side of the screen, so you might want to activate the actor you want to be on the left side of the screen first if there are multiple actors participating.
+await sendAndWait("Actor Name", "Hello, this is a line from a character.");
+await sendAndWait("Actor Name 2", "This is a line from another character.");
+// Add more lines as wished
+await TheatreAutomation.deactivateActor("Actor Name"); // This deactivates the actor after all lines have been sent. This will not remove the actor from the stage.
+```
+### Automated dialogue with audio
+
+Similar to previous, but with the option to use voiced lines. Supports multiple characters just as well.
+
+```javascript
+function calculateWaitTime(message, msPerChar = 50, buffer = 1000) {
+    return message.length * msPerChar + buffer;
+}
+
+async function sendAndWait(speaker, message, voiceFile = null) {   // This function sends a line and plays a voice file, then waits for the calculated time before proceeding.
+    let audioPromise = Promise.resolve();
+    if (voiceFile) {
+        audioPromise = playVoice(voiceFile);
+    }
+    await TheatreAutomation.sendMessage(speaker, message);
+
+    // Wait for whichever is longer, audio or text
+    await Promise.all([
+        audioPromise,
+        TheatreAutomation.wait(calculateWaitTime(message))
+    ]);
+}
+
+function playVoice(filePath) {  
+    return new Promise(resolve => {
+        const audio = new Audio(filePath);
+        audio.onended = resolve;
+        audio.play();
+    });
+}
+
+await TheatreAutomation.activateActor("Actor Name");    // Replace with the actual actor name. Activating an actor beforehand helps to sync the audio with the dialogue, but it's not strictly necessary.
+await sendAndWait("Actor Name", "Here's the message and after this is the path for the corresponding audio", "audio/dialogue_line1.mp3");
+await sendAndWait("Actor Name", "Here's the second message, and this is the path for the second audio", "audio/dialogue_line2.mp3");
+// Add more messages and audio files as needed. Multiple actors can be used just as well.  
+await TheatreAutomation.deactivateActor("Actor Name");
